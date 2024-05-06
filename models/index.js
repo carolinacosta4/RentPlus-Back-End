@@ -1,32 +1,33 @@
-const dbConfig = require('../config/db.config.js');
-const { Sequelize, DataTypes } = require('sequelize');
+const dbConfig = require("../config/db.config.js");
+const { Sequelize, DataTypes } = require("sequelize");
 
 const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
-    host: dbConfig.HOST,
-    dialect: dbConfig.dialect
-    ,
-    pool: {
-        max: dbConfig.pool.max,
-        min: dbConfig.pool.min,
-        acquire: dbConfig.pool.acquire,
-        idle: dbConfig.pool.idle
-    }
+  host: dbConfig.HOST,
+  dialect: dbConfig.dialect,
+  pool: {
+    max: dbConfig.pool.max,
+    min: dbConfig.pool.min,
+    acquire: dbConfig.pool.acquire,
+    idle: dbConfig.pool.idle,
+  },
 });
 
 (async () => {
-    try {
-        await sequelize.authenticate();
-        console.log('Connection do DB has been established successfully.');
-    } catch (err) {
-        console.error('Unable to connect to the database:', err);
-    }
+  try {
+    await sequelize.authenticate();
+    console.log("Connection do DB has been established successfully.");
+  } catch (err) {
+    console.error("Unable to connect to the database:", err);
+  }
 })();
 
 const db = {};
 //export the sequelize object (DB connection)
 db.sequelize = sequelize;
-//export USER model
+//export models
 db.user = require("./users.model.js")(sequelize, DataTypes);
+db.property = require("./properties.model.js")(sequelize, DataTypes);
+db.review = require("./reviews.model.js")(sequelize, DataTypes);
 
 // // optionally: SYNC
 // (async () => {
