@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Amenity = sequelize.define(
-    "Amenity",
+  const amenity = sequelize.define(
+    "amenity",
     {
       ID: {
         type: DataTypes.INTEGER,
@@ -43,5 +43,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(Amenity === sequelize.models.Amenity);
+  console.log(amenity === sequelize.models.amenity);
+  return amenity
 };

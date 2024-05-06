@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Payment = sequelize.define(
-    "Payment",
+  const payment = sequelize.define(
+    "payment",
     {
       ID: {
         type: DataTypes.INTEGER,
@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Reservation",
+          model: "reservation",
           key: "ID",
         },
       },
@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(32),
         allowNull: false,
         references: {
-          model: "StatusPayment",
+          model: "status_payment",
           key: "status",
         },
       },
@@ -28,11 +28,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.FLOAT,
         allowNull: false,
       },
-      payment_tpe: {
+      payment_type: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "PaymentType",
+          model: "payment_type",
           key: "ID",
         },
       },
@@ -43,5 +43,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(Payment === sequelize.models.Payment);
+  console.log(payment === sequelize.models.payment);
+  return payment
 };

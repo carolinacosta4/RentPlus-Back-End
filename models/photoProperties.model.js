@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const PhotosProperty = sequelize.define(
-    "PhotosProperty",
+  const photos_property = sequelize.define(
+    "photos_property",
     {
       ID: {
         type: DataTypes.INTEGER,
@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Property",
+          model: "property",
           key: "ID",
         },
       },
@@ -27,5 +27,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(PhotosProperty === sequelize.models.PhotosProperty);
+  console.log(photos_property === sequelize.models.photos_property);
+  return photos_property
 };

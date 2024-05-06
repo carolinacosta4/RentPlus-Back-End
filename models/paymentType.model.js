@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const PaymentType = sequelize.define(
-    "PaymentType",
+  const payment_type = sequelize.define(
+    "payment_type",
     {
       ID: {
         type: DataTypes.INTEGER,
@@ -19,5 +19,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(PaymentType === sequelize.models.PaymentType);
+  console.log(payment_type === sequelize.models.payment_type);
+  return payment_type
 };

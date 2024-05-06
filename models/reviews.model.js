@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Review = sequelize.define(
-    "Review",
+  const review = sequelize.define(
+    "review",
     {
       ID: {
         type: DataTypes.INTEGER,
@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
         allowNull: false,
         references: {
-          model: "User",
+          model: "user",
           key: "username",
         },
       },
@@ -28,19 +28,21 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      reservationID: {
+      reservation_ID: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Reservation",
+          model: "reservation",
           key: "ID",
         },
       },
     },
     {
       freezeTableName: true,
+      timestamps: false,
     }
   );
 
-  console.log(Review === sequelize.models.Review);
+  console.log(review === sequelize.models.review);
+  return review
 };

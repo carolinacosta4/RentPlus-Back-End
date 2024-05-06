@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const PropertyType = sequelize.define(
-    "PropertyType",
+  const property_type = sequelize.define(
+    "property_type",
     {
       ID: {
         type: DataTypes.INTEGER,
@@ -36,5 +36,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(PropertyType === sequelize.models.PropertyType);
+  console.log(property_type === sequelize.models.property_type);
+  return property_type
 };
