@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const ReservationStatus = sequelize.define(
-    "ReservationStatus",
+  const status_reservation = sequelize.define(
+    "status_reservation",
     {
       ID: {
         type: DataTypes.INTEGER,
@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         allowNull: false,
       },
-      status: {
+      status_name: {
         type: DataTypes.ENUM("confirmed", "canceled", "pending"),
         defaultValue: "pending",
         allowNull: false,
@@ -20,5 +20,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(ReservationStatus === sequelize.models.ReservationStatus);
+  console.log(status_reservation === sequelize.models.status_reservation);
+  return status_reservation
 };

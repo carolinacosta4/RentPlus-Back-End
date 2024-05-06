@@ -27,6 +27,16 @@ db.sequelize = sequelize;
 //export models
 db.user = require("./users.model.js")(sequelize, DataTypes);
 db.property = require("./properties.model.js")(sequelize, DataTypes);
+db.amenities = require("./amenities.model.js")(sequelize, DataTypes);
+db.favorites = require("./favorites.model.js")(sequelize, DataTypes);
+db.message = require("./messages.model.js")(sequelize, DataTypes);
+db.payment = require("./payment.model.js")(sequelize, DataTypes);
+db.status_payment = require("./paymentStatus.model.js")(sequelize, DataTypes);
+db.payment_type = require("./paymentType.model.js")(sequelize, DataTypes);
+db.photos_property = require("./photoProperties.model.js")(sequelize, DataTypes);
+db.property_type = require("./propertyTypes.model.js")(sequelize, DataTypes);
+db.reservation = require("./reservations.model.js")(sequelize, DataTypes);
+db.status_reservation = require("./reservationStatus.model.js")(sequelize, DataTypes);
 db.review = require("./reviews.model.js")(sequelize, DataTypes);
 
 // // optionally: SYNC

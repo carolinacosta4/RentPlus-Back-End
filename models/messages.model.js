@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Message = sequelize.define(
-    "Message",
+  const message = sequelize.define(
+    "message",
     {
       ID: {
         type: DataTypes.INTEGER,
@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
         allowNull: false,
         references: {
-          model: "User",
+          model: "user",
           key: "username",
         },
       },
@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
         allowNull: false,
         references: {
-          model: "User",
+          model: "user",
           key: "username",
         },
       },
@@ -35,5 +35,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(Message === sequelize.models.Message);
+  console.log(message === sequelize.models.message);
+  return message
 };

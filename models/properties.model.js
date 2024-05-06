@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Property = sequelize.define(
-    "Property",
+  const property = sequelize.define(
+    "property",
     {
       // ATRIBUTOS
       ID: {
@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      property_ype: {
+      property_type: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
@@ -70,7 +70,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(Property === sequelize.models.Property);
+  console.log(property === sequelize.models.property);
+  return property;
 };
 
 // OBS:

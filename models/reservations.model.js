@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Reservation = sequelize.define(
-    "Reservation",
+  const reservation = sequelize.define(
+    "reservation",
     {
       // ATRIBUTOS
       ID: {
@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Property",
+          model: "property",
           key: "ID",
         },
       },
@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "ReservationStatus",
+          model: "status_reservation",
           key: "ID",
         },
       },
@@ -45,8 +45,10 @@ module.exports = (sequelize, DataTypes) => {
     {
       // DEFINIÇÕES
       freezeTableName: true,
+      timestamps: false,
     }
   );
 
-  console.log(Reservation === sequelize.models.Reservation);
+  console.log(reservation === sequelize.models.reservation);
+  return reservation
 };

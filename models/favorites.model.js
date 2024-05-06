@@ -1,18 +1,20 @@
 module.exports = (sequelize, DataTypes) => {
-  const Favourite = sequelize.define(
-    "Favourite",
+  const favorites = sequelize.define(
+    "favorites",
     {
       username: {
         type: DataTypes.STRING(50),
         allowNull: false,
+        primaryKey: true,
       },
       property_ID: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "Property",
+          model: "property",
           key: "ID",
         },
+        primaryKey: true,
       },
     },
     {
@@ -21,5 +23,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(Favourite === sequelize.models.Favourite);
+  console.log(favorites === sequelize.models.favorites);
+  return favorites
 };
