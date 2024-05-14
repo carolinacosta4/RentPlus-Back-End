@@ -6,11 +6,12 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         type: DataTypes.STRING,
         allowNull: false,
-        // validate: { notNull: { msg: "Title can not be empty or null!" } }
+        validate: { notNull: { msg: "Username is required!" } }
       },
       email: {
         type: DataTypes.STRING,
         allowNull: false,
+        validate: { notNull: { msg: "Email is required!" }, isEmail: { msg: "Email invalid!" }, }
       },
       phone_number: {
         type: DataTypes.TEXT,
@@ -28,6 +29,7 @@ module.exports = (sequelize, DataTypes) => {
       password: {
         type: DataTypes.STRING,
         allowNull: false,
+        validate: { notNull: { msg: "Password is required!" } }
       },
       is_confirmed: {
         type: DataTypes.BOOLEAN,
