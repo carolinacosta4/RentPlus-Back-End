@@ -43,6 +43,14 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(review === sequelize.models.review);
-  return review
+  // ASSOCIATE
+  
+  review.associate = (models) => {
+    review.belongsTo(models.reservation, {
+      foreignKey: "reservation_ID",
+      as: "reservation",
+    });
+  };
+
+  return review;
 };

@@ -43,6 +43,29 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(payment === sequelize.models.payment);
-  return payment
+  // ASSOCIATE
+
+  payment.associate = (models) => {
+    // STATUS
+    payment.belongsTo(models.status_payment, {
+      foreignKey: "status_payment",
+      as: "status",
+    });
+
+    // TYPE
+    payment.belongsTo(models.payment_type, {
+      foreignKey: "payment_type",
+      as: "type",
+    });
+
+    // RESERVATION
+    payment.associate = (models) => {
+      payment.belongsTo(models.reservation, {
+        foreignKey: "reservation_ID",
+        as: "reservation",
+      });
+    };
+  };
+
+  return payment;
 };

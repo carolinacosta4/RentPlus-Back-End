@@ -20,6 +20,14 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(status_payment === sequelize.models.status_payment);
-  return status_payment
+  // ASSOCIATE
+  status_payment.associate = (models) => {
+    // PAYMENT
+    status_payment.hasMany(models.payment, {
+      foreignKey: "status_payment",
+      as: "payments",
+    });
+  };
+
+  return status_payment;
 };

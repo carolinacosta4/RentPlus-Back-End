@@ -5,7 +5,10 @@ module.exports = (sequelize, DataTypes) => {
       username: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        primaryKey: true,
+        references: {
+          model: "user",
+          key: "username",
+        },
       },
       property_ID: {
         type: DataTypes.INTEGER,
@@ -23,6 +26,16 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(favorites === sequelize.models.favorites);
-  return favorites
+  // ASSOCIATE
+
+  property.associate = (models) => {
+    // USER
+    property.belongsTo(models.user, {
+      foreignKey: "username", // username is the FK in the favorites
+      targetKey: "username", // username is the PK in the user
+      as: "user",
+    });
+  };
+
+  return favorites;
 };
