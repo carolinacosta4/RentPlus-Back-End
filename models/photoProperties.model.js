@@ -27,6 +27,15 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(photos_property === sequelize.models.photos_property);
-  return photos_property
+  // ASSOCIATE
+
+  photos_property.associate = (models) => {
+    // PROPERTY
+    photos_property.belongsTo(models.property, {
+      foreignKey: "property_ID", // property_ID is the FK in property
+      targetKey: "ID", // ID is the PK in property
+      as: "property",
+    });
+  };
+  return photos_property;
 };

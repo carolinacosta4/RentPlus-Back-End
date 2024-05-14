@@ -19,6 +19,15 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(payment_type === sequelize.models.payment_type);
-  return payment_type
+  // ASSOCIATE
+  
+  payment_type.associate = (models) => {
+    // PAYMENT
+    payment_type.hasMany(models.payment, {
+      foreignKey: "payment_type",
+      as: "payments",
+    });
+  };
+
+  return payment_type;
 };

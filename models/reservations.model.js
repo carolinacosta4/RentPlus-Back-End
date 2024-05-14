@@ -49,6 +49,40 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(reservation === sequelize.models.reservation);
-  return reservation
+  // ASSOCIATE
+
+  reservation.associate = (models) => {
+    // USER
+    reservation.belongsTo(models.user, {
+      foreignKey: "username", // username is the FK in reservation
+      targetKey: "username", // username is the PK in user
+      as: "user",
+    });
+
+    // PAYMENT
+    reservation.hasMany(models.payment, {
+      foreignKey: "reservation_ID",
+      as: "payments",
+    });
+
+    // PROPERTY
+    reservation.belongsTo(models.property, {
+      foreignKey: "property_ID",
+      as: "property",
+    });
+
+    // STATUS
+    reservation.belongsTo(models.status_reservation, {
+      foreignKey: "status_reservation_ID",
+      as: "status",
+    });
+
+    // REVIEWS
+    reservation.hasMany(models.review, {
+      foreignKey: "reservation_ID",
+      as: "reviews",
+    });
+  };
+
+  return reservation;
 };
