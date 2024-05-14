@@ -22,7 +22,7 @@ exports.findAll = async (req, res) => {
 };
 
 
-exports.findOne = (req, res) => {
+exports.findOne = async (req, res) => {
     try {
         if (!parseInt(req.params.ID)) {
                 return res.status(400).json({
