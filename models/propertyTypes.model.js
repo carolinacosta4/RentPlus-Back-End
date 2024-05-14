@@ -36,6 +36,13 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(property_type === sequelize.models.property_type);
-  return property_type
+  property_type.associate = (models) => {
+    // PHOTOS
+    property_type.hasMany(models.property, {
+      foreignKey: "ID",
+      as: "properties",
+    });
+  };
+
+  return property_type;
 };

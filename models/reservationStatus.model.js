@@ -20,6 +20,15 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(status_reservation === sequelize.models.status_reservation);
-  return status_reservation
+  // ASSOCIATE
+  
+  status_reservation.associate = (models) => {
+    // RESERVATION
+    status_reservation.hasMany(models.reservation, {
+      foreignKey: "status_reservation_ID", // FK in reservations
+      as: "reservations",
+    });
+  };
+
+  return status_reservation;
 };

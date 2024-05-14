@@ -35,6 +35,22 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(message === sequelize.models.message);
-  return message
+  // ASSOCIATE
+
+  message.associate = (models) => {
+    // USER
+    message.belongsTo(models.user, {
+      foreignKey: "sender_username", // receiver_username is FK in message
+      targetKey: "username", // username is PK in the user
+      as: "sender",
+    });
+    //
+    message.belongsTo(models.user, {
+      foreignKey: "receiver_username", // receiver_username is FK in message
+      targetKey: "username", // username is PK in the user
+      as: "receiver",
+    });
+  };
+
+  return message;
 };

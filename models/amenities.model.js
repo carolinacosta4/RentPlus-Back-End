@@ -43,6 +43,16 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(amenity === sequelize.models.amenity);
-  return amenity
+  // PROPERTY - TABLE WITH IDs
+
+  amenity.associate = (models) => {
+    amenity.belongsToMany(models.property, {
+      through: "amenity_property",
+      foreignKey: "amenity_ID",
+      otherKey: "property_ID",
+      as: "properties",
+    });
+  };
+
+  return amenity;
 };
