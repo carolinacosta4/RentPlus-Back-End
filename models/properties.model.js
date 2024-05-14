@@ -12,12 +12,16 @@ module.exports = (sequelize, DataTypes) => {
       owner_username: {
         type: DataTypes.STRING,
         allowNull: false,
+        references: {
+          model: "user",
+          key: "username",
+        },
       },
       property_type: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: "PropertyType",
+          model: "property_type",
           key: "type",
         },
       },
@@ -70,9 +74,49 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  console.log(property === sequelize.models.property);
-  return property;
-};
+  // ASSOCIATE
 
-// OBS:
-// Tudo que não tenha allowNull significa que pode ser null. É o default.
+  property.associate = (models) => {
+    // USER
+    property.belongsTo(models.user, {
+      foreignKey: "owner_username",
+      targetKey: "username",
+      as: "owner",
+    });
+
+    // TYPE
+    property.belongsTo(models.property_type, {
+      foreignKey: "property_type",
+      targetKey: "ID",
+      as: "owner",
+    });
+
+    // RESERVATION
+    property.hasMany(models.reservation, {
+      foreignKey: "ID",
+      as: "reservations",
+    });
+
+    // FAVORITES
+    property.hasMany(models.favorites, {
+      foreignKey: "username",
+      as: "favorites",
+    });
+
+    // PHOTOS
+    property.hasMany(models.photos_property, {
+      foreignKey: "ID",
+      as: "photos",
+    });
+
+    // AMENITY - TABLE WITH IDs
+    property.associate = (models) => {
+      property.belongsToMany(models.amenity, {
+        through: "amenity_property",
+        foreignKey: "property_ID",
+        otherKey: "amenity_ID",
+        as: "amenities",
+      });
+    };
+  };
+};
