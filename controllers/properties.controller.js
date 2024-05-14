@@ -11,7 +11,7 @@ exports.findAll = async (req, res) => {
   }
 };
 
-exports.create = async (req, res) => {
+exports.createPayment = async (req, res) => {
   try {
     // Logic to create a property
     res
