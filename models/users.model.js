@@ -65,10 +65,10 @@ module.exports = (sequelize, DataTypes) => {
 
   // ASSOCIATE
 
-  user.associate = (models) => {
+ /*  user.associate = (models) => {
     // PROPERTIES
     user.hasMany(models.property, {
-      onDelete: cascade,
+      onDelete: "cascade",
       foreignKey: "owner_username", // owner_username is FK in property
       sourceKey: "username", // username is PK in user
       as: "properties",
@@ -76,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // RESERVATIONS
     user.hasMany(models.reservation, {
-      onDelete: cascade,
+      onDelete: "cascade",
       foreignKey: "username", // username is FK in reservation
       sourceKey: "username", // username is PK in user
       as: "reservations",
@@ -84,7 +84,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // FAVORITES
     user.hasMany(models.favorites, {
-      onDelete: cascade,
+      onDelete: "cascade",
       foreignKey: "username", // username is FK in favorites
       sourceKey: "username", // username is PK in user
       as: "favorites",
@@ -92,19 +92,19 @@ module.exports = (sequelize, DataTypes) => {
 
     // MESSAGES
     user.hasMany(models.message, {
-      onDelete: cascade,
+      onDelete: "cascade",
       foreignKey: "sender_username", // sender_username is FK in message
       sourceKey: "username", // username is PK in user
       as: "messages_sent",
     });
     //
     user.hasMany(models.message, {
-      onDelete: cascade,
+      onDelete: "cascade",
       foreignKey: "receiver_username", // receiver_username is FK in message
       sourceKey: "username", // username is PK in user
       as: "messages_received",
     });
-  };
+  }; */
 
   return user;
 };

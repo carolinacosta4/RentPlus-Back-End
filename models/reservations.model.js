@@ -59,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
   // ASSOCIATE
 
   reservation.associate = (models) => {
-    // USER
+    /* // USER
     reservation.belongsTo(models.user, {
       foreignKey: "username", // username is the FK in reservation
       targetKey: "username", // username is the PK in user
@@ -71,13 +71,13 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "reservation_ID",
       as: "payments",
     });
+*/
 
     // PROPERTY
-    reservation.belongsTo(models.property, {
+    /* reservation.belongsTo(models.property, {
       foreignKey: "property_ID",
       as: "property",
-    });
-
+    });  */
     // STATUS
     reservation.belongsTo(models.status_reservation, {
       foreignKey: "status_reservation_ID",
