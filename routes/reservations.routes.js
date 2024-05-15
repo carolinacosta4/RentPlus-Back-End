@@ -1,5 +1,5 @@
 const express = require('express');
-const paymentController = require("../controllers/payments.controller");
+const ReservationController = require("../controllers/reservations.controller");
 let router = express.Router();
 
 router.use((req, res, next) => {
@@ -13,11 +13,11 @@ router.use((req, res, next) => {
 
 
 router.route('/')
-    .get(paymentController.findAll)
-    // .post(paymentController.create); NÃO SEI SE É AQUI OU NA PÁGINA DE BOOKINGS
+    .get(ReservationController.findAll)
+    .post(ReservationController.bodyValidator, ReservationController.create)
 
 router.route('/:ID')
-    .get(paymentController.findOne)
+    .get(ReservationController.findOne)
 
 
 router.all('*', function (req, res) {

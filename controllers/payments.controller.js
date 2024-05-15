@@ -30,25 +30,12 @@ exports.findOne = async (req, res) => {
                 })
             }
             
-        let payment = await Payment.findByPk(req.params.ID, {
-            //  mostra as caracteristicas daquele item mas que está em outras tabelas, através da relacao entre as tabelas
-            // include: [
-            //     {
-            //         // eager loading
-            //         model: PaymentType,
-            //         attributes: ['ID', 'type'] 
-            //     },
-            //     {
-            //         model: PaymentStatus,
-            //         attributes: ['ID', 'status_name']                
-            //     }
-            // ]
-        })
+        let payment = await Payment.findByPk(req.params.ID)
 
         if (payment === null) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
-                msg: `Cant find any paymeny with id ${req.params.ID}`
+                msg: `Can't find any payment with id ${req.params.ID}`
             })
         }
         else {
