@@ -1,3 +1,4 @@
+const config = require("../config/db.config.js")
 const db = require("../models/index.js");
 const User = db.user;
 
@@ -39,11 +40,18 @@ exports.findAll = async (req, res) => {
       data: users,
       links: [{ rel: "add-user", href: `/users`, method: "POST" }],
     });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      msg: err.message || "An unexpected error occurred. Please try again later.",
-    });
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
 
@@ -68,16 +76,22 @@ exports.register = async (req, res) => {
       });
     }
 
-  } catch (err) {
-    if (err instanceof ValidationError)
+  } catch (error) {
+    if (error instanceof ValidationError) {
       res
         .status(400)
-        .json({ success: false, msg: err.errors.map((e) => e.message) });
-    else
-      res.status(500).json({
-        success: false,
-        msg: err.message || "Some error occurred while creating the user.",
+        .json({ success: false, msg: error.errors.map((e) => e.message) });
+    } else if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
       });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
 
@@ -108,11 +122,18 @@ exports.findUser = async (req, res) => {
         },
       ],
     });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      msg: `An unexpected error occurred. Please try again later.`,
-    });
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
 
@@ -141,15 +162,23 @@ exports.update = async (req, res) => {
       success: true,
       msg: `User with username ${req.params.idT} was updated successfully.`,
     });
-  } catch (err) {
-    if (err instanceof ValidationError)
-      return res
-        .status(400)
-        .json({ success: false, msg: err.errors.map((e) => e.message) });
-    res.status(500).json({
-      success: false,
-      msg: `Error updating user with username ${req.params.idT}.`,
-    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        msg: error.errors.map((e) => e.message)
+      });
+    } else if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        msg: `Error updating user with username ${req.params.idT}.`,
+      });
+    }
   }
 };
 
@@ -168,26 +197,37 @@ exports.delete = async (req, res) => {
       success: false,
       msg: `The specified username does not exist.`,
     });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      msg: `An unexpected error occurred. Please try again later.`,
-    });
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
 
 // Handles user login.
 exports.login = async (req, res) => {
   try {
-    return res.json({
-      success: true,
-      msg: `User!`,
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      msg: err.message || "Some error occurred while creating the user.",
-    });
+    return res.status(200).json({ success: true })
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
 
@@ -198,11 +238,18 @@ exports.recoverEmail = async (req, res) => {
     return res.json({
       "message": "Recovery Password email sent."
     });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      msg: err.message || "Some error occurred while creating the user.",
-    });
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
 
@@ -213,10 +260,17 @@ exports.favorites = async (req, res) => {
     return res.json({
       "message": "Property added to favorites."
     });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      msg: err.message || "Some error occurred while creating the user.",
-    });
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };

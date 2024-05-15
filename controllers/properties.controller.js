@@ -15,7 +15,18 @@ exports.findAll = async (req, res) => {
   const offset = (pageNumber - 1) * limitValue;
 
   try {
-    const properties = await Property.findAll({ where: condition, limit: limitValue, offset: offset, raw: true });
+    const properties = await Property.findAll({
+      where: condition, limit: limitValue, offset: offset, raw: true,
+      include: [
+        {
+          model: db.property_type,
+          attributes: ['type_name']
+        },
+        {
+          model: db.photos_property,
+        },
+      ]
+    });
     const totalPages = properties.length / limitValue;
 
     properties.forEach((property) => {
@@ -55,7 +66,18 @@ exports.findAll = async (req, res) => {
 // Obtains information about specified property.
 exports.findProperty = async (req, res) => {
   try {
-    let property = await Property.findByPk(req.params.idT);
+    let property = await Property.findByPk(req.params.idT, {
+      include: [
+        {
+          model: db.property_type,
+          attributes: ['type_name']
+        },
+        {
+          model: db.photos_property,
+          attributes: ['photo']
+        },
+      ]
+    });
     if (property === null) {
       return res.status(404).json({
         success: false,
@@ -138,7 +160,17 @@ exports.update = async (req, res) => {
       .status(200)
       .json({ success: true, message: "Property updated successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
 
@@ -203,21 +235,58 @@ exports.findReviews = async (req, res) => {
       ],
     });
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      msg: `Error retrieving review with ID ${req.params.idT}.`,
-    });
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
 
 exports.createReview = async (req, res) => {
   try {
-    // Logic to create a amenity
-    res
-      .status(201)
-      .json({ success: true, message: "Review created successfully" });
+    let newReview = await Review.create(req.body);
+    res.status(201).json({
+      success: true,
+      msg: "Review created successfully.",
+      review_ID: newReview.ID,
+      links: [
+        { rel: "self", href: `/properties/${req.params.idT}/reviews/${newReview.ID}`, method: "GET" },
+        { rel: "delete", href: `/properties/${req.params.idT}/reviews/${newReview.ID}`, method: "DELETE" },
+        { rel: "modify", href: `/properties/${req.params.idT}/reviews/${newReview.ID}`, method: "PUT" }
+      ],
+    });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    if (error instanceof ValidationError) {
+      res.status(400).json({
+        success: false,
+        msg: error.errors.map((e) => e.message)
+      });
+    } else if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        success: false,
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      if (error instanceof Sequelize.ConnectionError) {
+        res.status(503).json({
+          error: "Database Error",
+          msg: "There was an issue connecting to the database. Please try again later"
+        });
+      } else {
+        res.status(500).json({
+          error: "Server Error",
+          msg: "An unexpected error occurred. Please try again later."
+        });
+      }
+    }
   }
 };
 
@@ -228,7 +297,24 @@ exports.updateReview = async (req, res) => {
       .status(200)
       .json({ success: true, message: "Review updated successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      if (error instanceof Sequelize.ConnectionError) {
+        res.status(503).json({
+          error: "Database Error",
+          msg: "There was an issue connecting to the database. Please try again later"
+        });
+      } else {
+        res.status(500).json({
+          error: "Server Error",
+          msg: "An unexpected error occurred. Please try again later."
+        });
+      }
+    }
   }
 };
 
@@ -240,6 +326,16 @@ exports.deleteReview = async (req, res) => {
       .status(200)
       .json({ success: true, message: "Review deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
   }
 };
