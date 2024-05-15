@@ -28,14 +28,14 @@ module.exports = (sequelize, DataTypes) => {
 
   // ASSOCIATE
 
-  property.associate = (models) => {
-    // USER
-    property.belongsTo(models.user, {
-      foreignKey: "username", // username is the FK in the favorites
-      targetKey: "username", // username is the PK in the user
-      as: "user",
-    });
-  };
+  // property.associate = (models) => {
+  //   // USER
+  //   property.belongsTo(models.user, {
+  //     foreignKey: "username", // username is the FK in the favorites
+  //     targetKey: "username", // username is the PK in the user
+  //     as: "user",
+  //   });
+  // };
 
   return favorites;
 };
