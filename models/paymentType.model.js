@@ -7,10 +7,12 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
         allowNull: false,
+        validate: { notNull: { msg: "ID is required!" } }
       },
       type: {
         type: DataTypes.ENUM("credit_card", "paypal", "bank_transfer"),
         allowNull: false,
+        validate: { notNull: { msg: "Type is required!" } }
       },
     },
     {

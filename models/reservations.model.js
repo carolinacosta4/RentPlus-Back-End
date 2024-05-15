@@ -8,6 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
         allowNull: false,
+        validate: { notNull: { msg: "ID is required!" } }
       },
       property_ID: {
         type: DataTypes.INTEGER,
@@ -16,10 +17,12 @@ module.exports = (sequelize, DataTypes) => {
           model: "property",
           key: "ID",
         },
+        validate: { notNull: { msg: "Propert ID is required!" } }
       },
       username: {
         type: DataTypes.STRING(50),
         allowNull: false,
+        validate: { notNull: { msg: "Username is required!" } }
       },
       status_reservation_ID: {
         type: DataTypes.INTEGER,
@@ -28,18 +31,22 @@ module.exports = (sequelize, DataTypes) => {
           model: "status_reservation",
           key: "ID",
         },
+        validate: { notNull: { msg: "Status Reservation ID is required!" } }
       },
       dateIn: {
         type: DataTypes.DATE,
         allowNull: false,
+        validate: { notNull: { msg: "Date in is required!" } }
       },
       dateOut: {
         type: DataTypes.DATE,
         allowNull: false,
+        validate: { notNull: { msg: "Date out is required!" } }
       },
       total_price: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        validate: { notNull: { msg: "Total price is required!" } }
       },
     },
     {
@@ -52,7 +59,7 @@ module.exports = (sequelize, DataTypes) => {
   // ASSOCIATE
 
   reservation.associate = (models) => {
-    // USER
+    /* // USER
     reservation.belongsTo(models.user, {
       foreignKey: "username", // username is the FK in reservation
       targetKey: "username", // username is the PK in user
@@ -64,13 +71,13 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "reservation_ID",
       as: "payments",
     });
+*/
 
     // PROPERTY
-    reservation.belongsTo(models.property, {
+    /* reservation.belongsTo(models.property, {
       foreignKey: "property_ID",
       as: "property",
-    });
-
+    });  */
     // STATUS
     reservation.belongsTo(models.status_reservation, {
       foreignKey: "status_reservation_ID",

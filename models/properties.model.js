@@ -98,7 +98,7 @@ module.exports = (sequelize, DataTypes) => {
     property.belongsTo(models.property_type, {
       foreignKey: "property_type",
       targetKey: "ID",
-      as: "owner",
+      as: "type_of_prop",
     });
 
     // RESERVATION
@@ -115,7 +115,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // PHOTOS
     property.hasMany(models.photos_property, {
-      foreignKey: "ID",
+      foreignKey: "property_ID",
       as: "photos",
     });
 
@@ -129,4 +129,6 @@ module.exports = (sequelize, DataTypes) => {
       });
     };
   };
+
+  return property;
 };

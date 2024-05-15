@@ -7,11 +7,13 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
         allowNull: false,
+        validate: { notNull: { msg: "ID is required!" } }
       },
       status_name: {
         type: DataTypes.ENUM("confirmed", "pending"),
         defaultValue: "pending",
         allowNull: false,
+        validate: { notNull: { msg: "Status name is required!" } }
       },
     },
     {
