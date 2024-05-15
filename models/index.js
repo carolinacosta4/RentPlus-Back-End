@@ -38,8 +38,8 @@ db.photos_property = require("./photoProperties.model.js")(
   DataTypes
 );
 db.property_type = require("./propertyTypes.model.js")(sequelize, DataTypes);
-db.property = require("./properties.model.js")(sequelize, DataTypes, db);
-db.reservation = require("./reservations.model.js")(sequelize, DataTypes, db);
+db.property = require("./properties.model.js")(sequelize, DataTypes);
+db.reservation = require("./reservations.model.js")(sequelize, DataTypes);
 db.status_reservation = require("./reservationStatus.model.js")(
   sequelize,
   DataTypes,
