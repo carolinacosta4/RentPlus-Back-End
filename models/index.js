@@ -26,29 +26,56 @@ const db = {};
 db.sequelize = sequelize;
 //export models
 db.user = require("./users.model.js")(sequelize, DataTypes);
-db.property = require("./properties.model.js")(sequelize, DataTypes);
-db.amenities = require("./amenities.model.js")(sequelize, DataTypes);
-db.favorites = require("./favorites.model.js")(sequelize, DataTypes);
-db.message = require("./messages.model.js")(sequelize, DataTypes);
-db.payment = require("./payment.model.js")(sequelize, DataTypes);
-db.status_payment = require("./paymentStatus.model.js")(sequelize, DataTypes);
-db.payment_type = require("./paymentType.model.js")(sequelize, DataTypes);
-db.photos_property = require("./photoProperties.model.js")(sequelize, DataTypes);
-db.property_type = require("./propertyTypes.model.js")(sequelize, DataTypes);
-db.reservation = require("./reservations.model.js")(sequelize, DataTypes);
-db.status_reservation = require("./reservationStatus.model.js")(sequelize, DataTypes);
-db.review = require("./reviews.model.js")(sequelize, DataTypes);
+
+db.amenities = require("./amenities.model.js")(sequelize, DataTypes,
+  db);
+db.favorites = require("./favorites.model.js")(sequelize, DataTypes,
+  db);
+db.message = require("./messages.model.js")(sequelize, DataTypes,
+  db);
+db.payment = require("./payment.model.js")(sequelize, DataTypes,
+  db);
+db.status_payment = require("./paymentStatus.model.js")(sequelize, DataTypes,
+  db);
+db.payment_type = require("./paymentType.model.js")(sequelize, DataTypes,
+  db);
+db.photos_property = require("./photoProperties.model.js")(
+  sequelize,
+  DataTypes,
+  db
+);
+db.property_type = require("./propertyTypes.model.js")(sequelize, DataTypes,
+  db);
+db.property = require("./properties.model.js")(sequelize, DataTypes,
+  db);
+db.reservation = require("./reservations.model.js")(sequelize, DataTypes,
+  db);
+db.status_reservation = require("./reservationStatus.model.js")(
+  sequelize,
+  DataTypes,
+  db
+);
+db.review = require("./reviews.model.js")(sequelize, DataTypes,
+  db);
+
+// Define associations
+Object.values(db).forEach((model) => {
+  console.log(db);
+  if (model.associate) {
+    model.associate(db);
+  }
+});
 
 // // optionally: SYNC
-// (async () => {
-//     try {
-//         // await sequelize.sync({ force: true }); // creates tables, dropping them first if they already existed
-//         // await sequelize.sync({ alter: true }); // checks the tables in the database (which columns they have, what are their data types, etc.), and then performs the necessary changes to make then match the models
-//         // await sequelize.sync(); // creates tables if they don't exist (and does nothing if they already exist)
-//         console.log('DB is successfully synchronized')
-//     } catch (error) {
-//         console.log(error)
-//     }
-// })();
+/* (async () => {
+    try {
+        // await sequelize.sync({ force: true }); // creates tables, dropping them first if they already existed
+        // await sequelize.sync({ alter: true }); // checks the tables in the database (which columns they have, what are their data types, etc.), and then performs the necessary changes to make then match the models
+       // await sequelize.sync(); // creates tables if they don't exist (and does nothing if they already exist)
+        console.log('DB is successfully synchronized')
+    } catch (error) {
+       console.log(error)
+    }
+})(); */
 
 module.exports = db;

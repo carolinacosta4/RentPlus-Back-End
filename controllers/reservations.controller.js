@@ -21,7 +21,25 @@ exports.findOne = async (req, res) => {
                 })
             }
             
-        let reservation = await Reservation.findByPk(req.params.ID)
+        let reservation = await Reservation.findByPk(req.params.ID, {
+            include: [
+              {
+                model: db.status_reservation,
+                as: 'status',
+                attributes: ['status_name']
+              },
+              {
+                model: db.review,
+                as: 'reviews',
+                attributes: ['comment']
+              },
+              {
+                model: db.payment,
+                as: 'payments',
+                attributes: ['amount']
+              },
+            ]}
+            )
 
         if (reservation === null) {
             return res.status(404).json({

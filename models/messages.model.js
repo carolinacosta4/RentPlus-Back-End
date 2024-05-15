@@ -54,6 +54,13 @@ module.exports = (sequelize, DataTypes) => {
       targetKey: "username", // username is PK in the user
       as: "receiver",
     });
+
+    // // PROPERTY
+    // message.belongsTo(models.property, {
+    //   foreignKey: "username", // username is the FK in reservation
+    //   targetKey: "username", // username is the PK in user
+    //   as: "property",
+    // });
   };
 
   return message;
