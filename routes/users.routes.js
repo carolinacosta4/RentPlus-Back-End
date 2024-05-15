@@ -17,13 +17,23 @@ router.use((req, res, next) => {
   next();
 });
 
-router.route("/").get(userController.findAll).post(userController.create);
+router.route("/")
+  .get(userController.findAll)
+  .post(userController.register);
 
-router
-  .route("/:idT")
-  .get(userController.findOne)
+router.route("/:idT")
+  .get(userController.findUser)
   .put(userController.update)
   .delete(userController.delete);
+
+router.route("/:idT/favorites")
+  .post(userController.favorites);
+
+router.route("/login")
+  .post(userController.login);
+
+router.route("/reset-password-email")
+  .post(userController.recoverEmail);
 
 router.all("*", function (req, res) {
   //send an predefined error message

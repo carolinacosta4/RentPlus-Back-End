@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
   property_type.associate = (models) => {
     // PHOTOS
     property_type.hasMany(models.property, {
-      foreignKey: "ID",
+      foreignKey: "property_type",
       as: "properties",
     });
   };

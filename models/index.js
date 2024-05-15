@@ -27,25 +27,36 @@ db.sequelize = sequelize;
 //export models
 db.user = require("./users.model.js")(sequelize, DataTypes);
 
-db.amenities = require("./amenities.model.js")(sequelize, DataTypes);
-db.favorites = require("./favorites.model.js")(sequelize, DataTypes);
-db.message = require("./messages.model.js")(sequelize, DataTypes);
-db.payment = require("./payment.model.js")(sequelize, DataTypes);
-db.status_payment = require("./paymentStatus.model.js")(sequelize, DataTypes);
-db.payment_type = require("./paymentType.model.js")(sequelize, DataTypes);
+db.amenities = require("./amenities.model.js")(sequelize, DataTypes,
+  db);
+db.favorites = require("./favorites.model.js")(sequelize, DataTypes,
+  db);
+db.message = require("./messages.model.js")(sequelize, DataTypes,
+  db);
+db.payment = require("./payment.model.js")(sequelize, DataTypes,
+  db);
+db.status_payment = require("./paymentStatus.model.js")(sequelize, DataTypes,
+  db);
+db.payment_type = require("./paymentType.model.js")(sequelize, DataTypes,
+  db);
 db.photos_property = require("./photoProperties.model.js")(
   sequelize,
-  DataTypes
+  DataTypes,
+  db
 );
-db.property_type = require("./propertyTypes.model.js")(sequelize, DataTypes);
-db.property = require("./properties.model.js")(sequelize, DataTypes);
-db.reservation = require("./reservations.model.js")(sequelize, DataTypes);
+db.property_type = require("./propertyTypes.model.js")(sequelize, DataTypes,
+  db);
+db.property = require("./properties.model.js")(sequelize, DataTypes,
+  db);
+db.reservation = require("./reservations.model.js")(sequelize, DataTypes,
+  db);
 db.status_reservation = require("./reservationStatus.model.js")(
   sequelize,
   DataTypes,
   db
 );
-db.review = require("./reviews.model.js")(sequelize, DataTypes);
+db.review = require("./reviews.model.js")(sequelize, DataTypes,
+  db);
 
 // Define associations
 Object.values(db).forEach((model) => {

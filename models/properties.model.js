@@ -22,44 +22,54 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         references: {
           model: "property_type",
-          key: "type",
+          key: "ID",
         },
       },
       title: {
         type: DataTypes.STRING(50),
         allowNull: false,
+        validate: { notNull: { msg: "Title is required!" } }
       },
       description: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: { notNull: { msg: "Description is required!" } }
       },
       location: {
         type: DataTypes.STRING(50),
         allowNull: false,
+        validate: { notNull: { msg: "Location is required!" } }
       },
       map_url: {
         type: DataTypes.STRING,
         allowNull: false,
+        isUrl: true,
+        validate: { notNull: { msg: "Map URL is required!" }, isUrl: { msg: "URL format invalid." } }
       },
       daily_price: {
         type: DataTypes.FLOAT,
         allowNull: false,
+        validate: { notNull: { msg: "Daily price is required!" } }
       },
       guest_number: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        validate: { notNull: { msg: "Number of guests is required!" } }
       },
       bathrooms: {
         type: DataTypes.SMALLINT,
         allowNull: false,
+        validate: { notNull: { msg: "Number of bathrooms is required!" } }
       },
       bedrooms: {
         type: DataTypes.SMALLINT,
         allowNull: false,
+        validate: { notNull: { msg: "Number of bedrooms is required!" } }
       },
       beds: {
         type: DataTypes.SMALLINT,
         allowNull: false,
+        validate: { notNull: { msg: "Number of beds is required!" } }
       },
       is_blocked: {
         type: DataTypes.BOOLEAN,
@@ -93,31 +103,41 @@ module.exports = (sequelize, DataTypes) => {
 
     // RESERVATION
     property.hasMany(models.reservation, {
-      foreignKey: "ID",
+      foreignKey: "property_ID",
       as: "reservations",
     });
 
     // FAVORITES
     property.hasMany(models.favorites, {
-      foreignKey: "username",
+      foreignKey: "property_ID",
       as: "favorites",
     });
 
     // PHOTOS
     property.hasMany(models.photos_property, {
-      foreignKey: "property_ID",
+      foreignKey: "ID",
+      targetKey: "ID",
       as: "photos",
     });
 
-    // AMENITY - TABLE WITH IDs
-    property.associate = (models) => {
-      property.belongsToMany(models.amenity, {
-        through: "amenity_property",
-        foreignKey: "property_ID",
-        otherKey: "amenity_ID",
-        as: "amenities",
-      });
-    };
+    // MESSAGES
+    // property.hasMany(models.message, {
+    //   onDelete: "cascade",
+    //   foreignKey: "username", // username is FK in reservation
+    //   sourceKey: "username", // username is PK in user
+    //   as: "messages",
+    // });
+
+    // // AMENITY - TABLE WITH IDs
+    // property.associate = (models) => {
+    //   property.belongsToMany(models.amenity, {
+    //     through: "amenity_property",
+    //     foreignKey: "property_ID",
+    //     otherKey: "amenity_ID",
+    //     as: "amenities",
+    //     timestamps: false
+    //   });
+    // };
   };
 
   return property;

@@ -7,11 +7,13 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
+        validate: { notNull: { msg: "Username is required!" } }
       },
       email: {
         type: DataTypes.STRING,
         allowNull: false,
         isEmail: true,
+        validate: { notNull: { msg: "Email is required!" }, isEmail: { msg: "Email invalid!" }, }
       },
       phone_number: {
         type: DataTypes.TEXT,
@@ -29,6 +31,7 @@ module.exports = (sequelize, DataTypes) => {
       password: {
         type: DataTypes.STRING,
         allowNull: false,
+        validate: { notNull: { msg: "Password is required!" } }
       },
       is_confirmed: {
         type: DataTypes.BOOLEAN,
@@ -65,7 +68,7 @@ module.exports = (sequelize, DataTypes) => {
 
   // ASSOCIATE
 
- /*  user.associate = (models) => {
+ user.associate = (models) => {
     // PROPERTIES
     user.hasMany(models.property, {
       onDelete: "cascade",
@@ -90,6 +93,14 @@ module.exports = (sequelize, DataTypes) => {
       as: "favorites",
     });
 
+    // REVIEWS
+    user.hasMany(models.review, {
+      onDelete: "cascade",
+      foreignKey: "username", // username is FK in reservation
+      sourceKey: "username", // username is PK in user
+      as: "reviews",
+    });
+
     // MESSAGES
     user.hasMany(models.message, {
       onDelete: "cascade",
@@ -104,7 +115,7 @@ module.exports = (sequelize, DataTypes) => {
       sourceKey: "username", // username is PK in user
       as: "messages_received",
     });
-  }; */
+  }; 
 
   return user;
 };
