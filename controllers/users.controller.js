@@ -2,7 +2,7 @@ const config = require("../config/db.config.js")
 const db = require("../models/index.js");
 const User = db.user;
 
-const { Op, ValidationError } = require("sequelize");
+const { Op, ValidationError, Sequelize } = require("sequelize");
 
 // Obtains general information about all users. Route only available for admins (authentication token must be provided in header). Has an optional limit counter.
 exports.findAll = async (req, res) => {
@@ -98,7 +98,67 @@ exports.register = async (req, res) => {
 // Obtains information about specified user. Route only available for admins (authentication token must be provided in header).
 exports.findUser = async (req, res) => {
   try {
-    let user = await User.findByPk(req.params.idT);
+    let userFound = await User.findByPk(req.params.idT)
+    console.log(userFound.user_role);
+    let user
+    if(userFound.user_role == 'owner'){
+      user = await User.findByPk(req.params.idT, {
+        include: [
+          {
+            model: db.favorites,
+            as: 'favorites',
+            attributes: ['property_ID']
+          },
+          {
+            model: db.property,
+            as: 'properties',
+            attributes: ['title']
+          },
+          {
+            model: db.message,
+            as: 'properties',
+            attributes: ['content']
+          },
+          {
+            model: db.message,
+            as: 'messages_received',
+            attributes: ['content']
+          },
+        ]
+      });
+    }else{
+      user = await User.findByPk(req.params.idT, {
+        include: [
+          {
+            model: db.favorites,
+            as: 'favorites',
+            attributes: ['property_ID']
+          },
+          {
+            model: db.reservation,
+            as: 'reservations',
+            attributes: ['dateIn']
+          },
+          {
+            model: db.review,
+            as: 'reviews',
+            attributes: ['comment']
+          },
+          {
+            model: db.message,
+            as: 'messages_sent',
+            attributes: ['content']
+          },
+          {
+            model: db.message,
+            as: 'messages_received',
+            attributes: ['content']
+          },
+        ]
+      });
+    }
+
+
     if (user === null) {
       return res.status(404).json({
         success: false,

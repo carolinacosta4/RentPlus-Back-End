@@ -33,7 +33,6 @@ module.exports = (sequelize, DataTypes) => {
     // PROPERTY
     photos_property.belongsTo(models.property, {
       foreignKey: "property_ID", // property_ID is the FK in property
-      targetKey: "ID", // ID is the PK in property
       as: "property",
     });
   };

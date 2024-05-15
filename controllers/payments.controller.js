@@ -30,7 +30,19 @@ exports.findOne = async (req, res) => {
                 })
             }
             
-        let payment = await Payment.findByPk(req.params.ID)
+        let payment = await Payment.findByPk(req.params.ID, {
+            include: [
+              {
+                model: db.status_payment,
+                as: 'status',
+                attributes: ['status_name']
+              },
+              {
+                model: db.payment_type,
+                as: 'type',
+                attributes: ['type']
+              },
+            ]})
 
         if (payment === null) {
             return res.status(404).json({

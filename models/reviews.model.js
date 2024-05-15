@@ -50,6 +50,13 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "reservation_ID",
       as: "reservation",
     });
+
+    // USER
+    review.belongsTo(models.user, {
+      foreignKey: "username", // username is the FK in reservation
+      targetKey: "username", // username is the PK in user
+      as: "userReview",
+    });
   };
 
   return review;

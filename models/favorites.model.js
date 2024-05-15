@@ -35,6 +35,12 @@ module.exports = (sequelize, DataTypes) => {
       targetKey: "username", // username is the PK in the user
       as: "user",
     });
+
+    favorites.belongsTo(models.property, {
+      foreignKey: "ID", // username is the FK in the favorites
+      targetKey: "ID", // username is the PK in the user
+      as: "userFavorites",
+    });
   };
 
   return favorites;

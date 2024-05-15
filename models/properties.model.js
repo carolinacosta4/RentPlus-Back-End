@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         references: {
           model: "property_type",
-          key: "type",
+          key: "ID",
         },
       },
       title: {
@@ -103,31 +103,41 @@ module.exports = (sequelize, DataTypes) => {
 
     // RESERVATION
     property.hasMany(models.reservation, {
-      foreignKey: "ID",
+      foreignKey: "property_ID",
       as: "reservations",
     });
 
     // FAVORITES
     property.hasMany(models.favorites, {
-      foreignKey: "username",
+      foreignKey: "property_ID",
       as: "favorites",
     });
 
     // PHOTOS
     property.hasMany(models.photos_property, {
-      foreignKey: "property_ID",
+      foreignKey: "ID",
+      targetKey: "ID",
       as: "photos",
     });
 
-    // AMENITY - TABLE WITH IDs
-    property.associate = (models) => {
-      property.belongsToMany(models.amenity, {
-        through: "amenity_property",
-        foreignKey: "property_ID",
-        otherKey: "amenity_ID",
-        as: "amenities",
-      });
-    };
+    // MESSAGES
+    // property.hasMany(models.message, {
+    //   onDelete: "cascade",
+    //   foreignKey: "username", // username is FK in reservation
+    //   sourceKey: "username", // username is PK in user
+    //   as: "messages",
+    // });
+
+    // // AMENITY - TABLE WITH IDs
+    // property.associate = (models) => {
+    //   property.belongsToMany(models.amenity, {
+    //     through: "amenity_property",
+    //     foreignKey: "property_ID",
+    //     otherKey: "amenity_ID",
+    //     as: "amenities",
+    //     timestamps: false
+    //   });
+    // };
   };
 
   return property;

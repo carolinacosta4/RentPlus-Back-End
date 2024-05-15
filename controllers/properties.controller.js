@@ -20,11 +20,19 @@ exports.findAll = async (req, res) => {
       include: [
         {
           model: db.property_type,
+          as: 'type_of_prop',
           attributes: ['type_name']
         },
         {
           model: db.photos_property,
+          as: 'photos',
+          attributes: ['photo']
         },
+        // {
+        //   model: db.amenity,
+        //   as: 'amenities',
+        //   attributes: ['amenity_name']
+        // },
       ]
     });
     const totalPages = properties.length / limitValue;
@@ -70,11 +78,23 @@ exports.findProperty = async (req, res) => {
       include: [
         {
           model: db.property_type,
+          as: 'type_of_prop',
           attributes: ['type_name']
         },
         {
           model: db.photos_property,
+          as: 'photos',
           attributes: ['photo']
+        },
+        // {
+        //   model: db.amenity,
+        //   as: 'amenities',
+        //   attributes: ['amenity_name']
+        // },
+        {
+          model: db.favorites,
+          as: 'favorites',
+          attributes: ['username']
         },
       ]
     });
@@ -234,7 +254,7 @@ exports.findReviews = async (req, res) => {
         },
       ],
     });
-  } catch (err) {
+  } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
       res.status(503).json({
         error: "Database Error",

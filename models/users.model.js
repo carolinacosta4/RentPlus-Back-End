@@ -68,7 +68,7 @@ module.exports = (sequelize, DataTypes) => {
 
   // ASSOCIATE
 
- /*  user.associate = (models) => {
+ user.associate = (models) => {
     // PROPERTIES
     user.hasMany(models.property, {
       onDelete: "cascade",
@@ -93,6 +93,14 @@ module.exports = (sequelize, DataTypes) => {
       as: "favorites",
     });
 
+    // REVIEWS
+    user.hasMany(models.review, {
+      onDelete: "cascade",
+      foreignKey: "username", // username is FK in reservation
+      sourceKey: "username", // username is PK in user
+      as: "reviews",
+    });
+
     // MESSAGES
     user.hasMany(models.message, {
       onDelete: "cascade",
@@ -107,7 +115,7 @@ module.exports = (sequelize, DataTypes) => {
       sourceKey: "username", // username is PK in user
       as: "messages_received",
     });
-  }; */
+  }; 
 
   return user;
 };
