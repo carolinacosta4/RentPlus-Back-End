@@ -6,7 +6,14 @@ const Property = db.property
 
 exports.findAll = async (req, res) => {
     try {
-      const reservs = await Reservation.findAll();
+      const reservs = await Reservation.findAll({ include: [
+        {
+          model: db.status_reservation,
+          as: 'status',
+          attributes: ['status_name']
+        },
+    ], 
+    attributes: { exclude: ['status_reservation_ID'] }});  // TESTE
       res.status(200).json(reservs);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
@@ -62,48 +69,15 @@ exports.findOne = async (req, res) => {
     };
 };
 
-// exports.bodyValidator = async (req, res, next) => {
-//     try{
-//         const property = await Property.findByPk(req.body.property_ID);
-//         if (!property) {
-//             return res.status(400).json({
-//                 error: `There is no property with the ID ${req.body.property_ID}`
-//             });
-//         }
+exports.bodyValidator = async (req, res, next) => {
+    try{
+        const property = await Property.findByPk(req.body.property_ID);
+        if (!property) {
+            return res.status(400).json({
+                error: `There is no property with the ID ${req.body.property_ID}`
+            });
+        }
     
-//     if (!req.body.property_ID || !req.body.username  || !req.body.status_reservation_ID  || !req.body.dateIn  || !req.body.dateOut  || !req.body.total_price) {
-//             return res.status(400).json({
-//                 error: "Some required information are missing"
-//             })
-//         }
-//         if (isNaN(req.body.property_ID) || parseInt(req.body.property_ID) != req.body.property_ID){
-//             return res.status(400).json({
-//                 error: "Property ID must be an integer number"
-//             })
-//         }
-//         if (isNaN(req.body.status_reservation_ID) || parseInt(req.body.status_reservation_ID) != req.body.status_reservation_ID) {
-//             return res.status(400).json({
-//                 error: "Status Reservation ID must be an integer number"
-//             });
-//         }
-    
-//         if (isNaN(req.body.total_price)) {
-//             return res.status(400).json({
-//                 error: "Total Price must be a number"
-//             });
-//         }
-//         next()
-//     }
-//     catch(err){
-//         res.status(500).json({
-//             error: "Internal server error"
-//         });
-//     }
-    
-//     };
-
-
-exports.bodyValidator = async (req, res, next) => {    
     if (!req.body.property_ID || !req.body.username  || !req.body.status_reservation_ID  || !req.body.dateIn  || !req.body.dateOut  || !req.body.total_price) {
             return res.status(400).json({
                 error: "Some required information are missing"
@@ -126,6 +100,12 @@ exports.bodyValidator = async (req, res, next) => {
             });
         }
         next()
+    }
+    catch(err){
+        res.status(500).json({
+            error: "Internal server error"
+        });
+    }
     
     };
 
@@ -154,19 +134,61 @@ exports.create = async (req, res) => {
     };
 };
 
+// TERMINAR ISSO AQUI
 exports.changeStatus = async (req, res) => {
     try {
-        let reservation = await Reservation.findByPk(req.params.ID)
-    }
-    catch (err) {
-        if (err instanceof ValidationError)
-            res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
-        else
-            res.status(500).json({
-                success: false, msg: err.message || "Some error occurred while updating the status."
+        const reservationId = req.params.ID;
+        const newStatusName = req.body.status_name;
+
+        // Verifica se a reserva existe
+        const reservation = await Reservation.findByPk(reservationId);
+        if (!reservation) {
+            return res.status(404).json({
+                success: false,
+                msg: `There is no reservation with the ID ${reservationId}`
             });
-    };
+        }
+
+        // Verifica se o novo status existe pelo nome
+        const status = await db.status_reservation.findOne({ where: { status_name: newStatusName } });
+        if (!status) {
+            return res.status(400).json({
+                success: false,
+                msg: `There is no status with the name ${newStatusName}`
+            });
+        }
+
+        // Atualiza o status da reserva
+        reservation.status_reservation_ID = status.ID;
+        await reservation.save();
+
+        const updatedReservation = await Reservation.findByPk(reservationId, {
+            include: [
+                {
+                    model: db.status_reservation,
+                    as: 'status',
+                    attributes: ['status_name']
+                }
+            ]
+        });
+
+        res.status(200).json({
+            success: true,
+            msg: 'Reservation status successfully updated.',
+            data: updatedReservation
+        });
+    } catch (err) {
+        if (err instanceof ValidationError) {
+            res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
+        } else {
+            res.status(500).json({
+                success: false,
+                msg: err.message || "Some error occurred while updating the status."
+            });
+        }
+    }
 };
+
 
 exports.deleteReservation = async (req, res) => {
     try {
@@ -212,7 +234,7 @@ exports.deleteReservation = async (req, res) => {
     }
 };
 
-exports.getUserBookings = async (req, res) => {
+exports.getUserReservations = async (req, res) => {
     try {
         // const username = req.user.username; // Obtém o nome de usuário do token de autenticação
 
@@ -221,7 +243,7 @@ exports.getUserBookings = async (req, res) => {
 
         const offset = (page - 1) * limit;
 
-        const bookings = await Reservation.findAndCountAll({
+        const reservations = await Reservation.findAndCountAll({
             where: { username },
             limit: parseInt(limit),
             offset: offset,
@@ -230,9 +252,9 @@ exports.getUserBookings = async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            data: bookings.rows,
+            data: reservations.rows,
             pagination: {
-                total: bookings.count,
+                total: reservations.count,
                 page: parseInt(page),
                 limit: parseInt(limit)
             }
