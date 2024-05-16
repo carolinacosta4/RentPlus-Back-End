@@ -16,9 +16,16 @@ router.route('/')
     .get(ReservationController.findAll)
     .post(ReservationController.bodyValidator, ReservationController.create)
 
+
 router.route('/:ID')
     .get(ReservationController.findOne)
+    .delete(ReservationController.deleteReservation) // AQUI depois mudar para rota com o ID do user -> reservations/idUser/idReservation
 
+router.route('/:username')
+    .get(ReservationController.getUserReservations)
+
+router.route('/:ID/status')
+    .patch(ReservationController.changeStatus) 
 
 router.all('*', function (req, res) {
     res.status(400).json({ success: false, message: `The API does not recognize the request on ${req.method} ${req.originalUrl}` });

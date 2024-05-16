@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
         primaryKey: true,
         allowNull: false,
+        validate: { notNull: { msg: "ID is required!" } }
       },
       receiver_username: {
         type: DataTypes.STRING(50),
@@ -15,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
           model: "user",
           key: "username",
         },
+        validate: { notNull: { msg: "Receiver username is required!" } }
       },
       sender_username: {
         type: DataTypes.STRING(50),
@@ -23,10 +25,21 @@ module.exports = (sequelize, DataTypes) => {
           model: "user",
           key: "username",
         },
+        validate: { notNull: { msg: "Sender username is required!" } }
       },
       content: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: { notNull: { msg: "Content is required!" } }
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        get() {
+          const rawValue = this.getDataValue('created_at');
+          return rawValue ? rawValue.toISOString().slice(0, 19).replace('T', ' ') : null;
+        },
+        allowNull: false,
+        validate: { notNull: { msg: "Date is required!" } },
       },
     },
     {

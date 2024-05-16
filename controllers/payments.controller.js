@@ -1,7 +1,5 @@
 const db = require("../models/index.js");
 const Payment = db.payment;
-const PaymentType = db.payment_type;
-const PaymentStatus = db.payment_status;
 
 // exports.bodyValidator = (req, res, next) => {
 //     if (!req.body.ID || !req.body.reservation_ID || !req.body.status_payment  || !req.body.amount  || !req.body.payment_type) {
@@ -14,7 +12,17 @@ const PaymentStatus = db.payment_status;
 
 exports.findAll = async (req, res) => {
     try {
-      const payments = await Payment.findAll();
+      const payments = await Payment.findAll({include: [
+        {
+          model: db.status_payment,
+          as: 'status',
+          attributes: ['status_name']
+        },
+        {
+          model: db.payment_type,
+          as: 'type',
+          attributes: ['type']
+        }]});
       res.status(200).json(payments);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
