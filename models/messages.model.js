@@ -32,6 +32,15 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         validate: { notNull: { msg: "Content is required!" } }
       },
+      created_at: {
+        type: DataTypes.DATE,
+        get() {
+          const rawValue = this.getDataValue('created_at');
+          return rawValue ? rawValue.toISOString().slice(0, 19).replace('T', ' ') : null;
+        },
+        allowNull: false,
+        validate: { notNull: { msg: "Date is required!" } },
+      },
     },
     {
       freezeTableName: true,

@@ -19,7 +19,7 @@ app.use("/users", require("./routes/users.routes.js"));
 app.use("/properties", require("./routes/properties.routes.js"));
 app.use("/payments", require("./routes/payments.routes.js"));
 app.use("/reservations", require("./routes/reservations.routes.js"));
-// app.use("/messages", require("./routes/messages.routes.js"));
+app.use("/messages", require("./routes/messages.routes.js"));
 
 // handle invalid routes
 app.all("*", function (req, res) {

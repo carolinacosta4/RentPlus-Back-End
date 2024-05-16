@@ -1,5 +1,5 @@
 const express = require('express');
-const messageController = require("../controllers/messages.controller");
+const MessageController = require("../controllers/messages.controller");
 let router = express.Router();
 
 router.use((req, res, next) => {
@@ -11,9 +11,17 @@ router.use((req, res, next) => {
     next()
 })
 
+router.route('/')
+    .get(MessageController.findAll)
+
+router.route('/')
+    .post(MessageController.bodyValidator, MessageController.create)
+
 router.route('/:username')
-    .get(messageController.findAllOfLoggedUser);
+    .get(MessageController.findAllFromSpecificUser);
+
+router.route('/:username/:ID')
+    .delete(MessageController.deleteMessage);
 
 
-// router.route('/')
-//     .post(messageController.bodyValidator, messageController.create)
+module.exports = router;
