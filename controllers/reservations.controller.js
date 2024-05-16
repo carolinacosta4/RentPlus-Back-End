@@ -1,19 +1,28 @@
 const db = require("../models/index.js");
 const Reservation = db.reservation;
-const ReservationStatus = db.status_reservation;
 const { ValidationError } = require('sequelize');
 const Property = db.property
+const Payment = db.payment;
 
 exports.findAll = async (req, res) => {
     try {
       const reservs = await Reservation.findAll({ include: [
         {
-          model: db.status_reservation,
-          as: 'status',
-          attributes: ['status_name']
+            model: db.status_reservation,
+            as: 'status',
+            attributes: ['status_name']
         },
+        {
+            model: db.payment,
+            as: 'payments',
+            include: [{
+                model: db.status_payment,
+                as: 'status',
+                attributes: ['status_name']
+            }],
+        }
     ], 
-    attributes: { exclude: ['status_reservation_ID'] }});  // TESTE
+    attributes: { exclude: ['status_reservation_ID',] }});  // TESTE
       res.status(200).json(reservs);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
@@ -58,9 +67,6 @@ exports.findOne = async (req, res) => {
             return res.json({
                 success: true,
                 data: reservation,
-                links: [
-                    { "rel": "modify", "href": `/reservations/${reservation.ID}`, "method": "POST" }
-                ]
             })
         }
     } catch (err) {
@@ -78,7 +84,7 @@ exports.bodyValidator = async (req, res, next) => {
             });
         }
     
-    if (!req.body.property_ID || !req.body.username  || !req.body.status_reservation_ID  || !req.body.dateIn  || !req.body.dateOut  || !req.body.total_price) {
+    if (!req.body.property_ID || !req.body.username  || !req.body.status_reservation_ID  || !req.body.dateIn  || !req.body.dateOut  || !req.body.total_price || !req.body.payment_type) {
             return res.status(400).json({
                 error: "Some required information are missing"
             })
@@ -111,30 +117,68 @@ exports.bodyValidator = async (req, res, next) => {
 
 
 
+// exports.create = async (req, res, next) => {
+//     try {
+//         let newReservation = await Reservation.create(req.body);
+//         res.status(201).json({
+//             success: true,
+//             msg: "Reservation successfully created.",
+//             links: [
+//                 { "rel": "self", "href": `/reservations/${newReservation.ID}`, "method": "GET" },
+//                 { "rel": "delete", "href": `/reservations/${newReservation.ID}`, "method": "DELETE" }
+//             ]
+//         });
+//     }
+//     catch (err) {
+//         if (err instanceof ValidationError)
+//             res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
+//         else
+//             res.status(500).json({
+//                 success: false, msg: err.message || "Some error occurred while creating the reservation."
+//             });
+//     };
+//     next()
+// };
+
 exports.create = async (req, res) => {
+    const t = await db.sequelize.transaction(); // Iniciando uma transação
+
     try {
-        let newReservation = await Reservation.create(req.body);
-        // return success message with ID
-        res.status(201).json({
+        // Criando a reserva
+        const newReservation = await Reservation.create(req.body, { transaction: t });
+
+        // Criando o pagamento associado à reserva com status "pending"
+        const newPayment = await Payment.create({
+            reservation_ID: newReservation.ID,
+            status_payment: 1, // Assumindo que 1 é o ID para "pending"
+            amount: req.body.total_price,
+            payment_type: req.body.payment_type
+        }, { transaction: t });
+
+        await t.commit(); // Commit da transação se tudo estiver correto
+
+        return res.status(201).json({
             success: true,
-            msg: "Reservation successfully created.",
-            links: [
-                { "rel": "self", "href": `/reservations/${newReservation.ID}`, "method": "GET" },
-                { "rel": "delete", "href": `/reservations/${newReservation.ID}`, "method": "DELETE" }
-            ]
+            msg: "Reservation and payment successfully created with status 'pending'.",
+            data: {
+                reservation: newReservation,
+                payment: newPayment
+            }
         });
-    }
-    catch (err) {
-        if (err instanceof ValidationError)
-            res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
-        else
-            res.status(500).json({
-                success: false, msg: err.message || "Some error occurred while creating the reservation."
+    } catch (err) {
+        await t.rollback(); // Rollback da transação em caso de erro
+
+        if (err instanceof ValidationError) {
+            return res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
+        } else {
+            return res.status(500).json({
+                success: false,
+                msg: err.message || "Some error occurred while creating the reservation and payment."
             });
-    };
+        }
+    }
 };
 
-// TERMINAR ISSO AQUI
 exports.changeStatus = async (req, res) => {
     try {
         const reservationId = req.params.ID;
