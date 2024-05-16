@@ -79,7 +79,7 @@ exports.bodyValidator = async (req, res, next) => {
     try{
         const property = await Property.findByPk(req.body.property_ID);
         if (!property) {
-            return res.status(400).json({
+            return res.status(404).json({
                 error: `There is no property with the ID ${req.body.property_ID}`
             });
         }
@@ -146,6 +146,19 @@ exports.create = async (req, res) => {
     try {
         // Criando a reserva
         const newReservation = await Reservation.create(req.body, { transaction: t });
+
+        if (isNaN(req.body.payment_type) || !req.body.payment_type || parseInt(req.body.payment_type) != req.body.payment_type){
+            return res.status(400).json({
+                error: "Payment type is required must be an integer number"
+            })
+        } 
+
+        const pType = await db.payment_type.findByPk(req.body.payment_type);
+        if (!pType) {
+            return res.status(404).json({
+                error: `There is no payment type with the ID ${req.body.payment_type}`
+            });
+        }
 
         // Criando o pagamento associado à reserva com status "pending"
         const newPayment = await Payment.create({
