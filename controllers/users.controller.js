@@ -8,22 +8,14 @@ const Favorite = db.favorites
 
 const { Op, ValidationError, Sequelize } = require("sequelize");
 
-// Obtains general information about all users. Route only available for admins (authentication token must be provided in header). Has an optional limit counter.
+// Obtains general information about all users. Route only available for admins. Has an optional limit counter.
 exports.findAll = async (req, res) => {
   let { page, limit, sort } = req.query;
 
   const pageNumber = page && Number.parseInt(page) > 0 ? Number.parseInt(page) : 1;
   const limitValue = limit && Number.parseInt(limit) > 0 ? Number.parseInt(limit) : 10;
   const offset = (pageNumber - 1) * limitValue;
-
-  if (sort) {
-    if (sort.toLowerCase() != 'asc' && sort.toLowerCase() != 'desc') {
-      return res.status(400).json({
-        success: false,
-        message: "Sort can only be 'asc' or 'desc'."
-      });
-    }
-  }
+  let users
 
   try {
     if (req.loggedUserRole !== "admin")
@@ -32,7 +24,17 @@ exports.findAll = async (req, res) => {
         msg: "You don't have permission to access this route."
       });
 
-    let users = await User.findAll({ limit: limitValue, offset: offset, order: [['username', sort.toUpperCase()]], raw: true });
+    if (sort) {
+      if (sort.toLowerCase() != 'asc' && sort.toLowerCase() != 'desc') {
+        return res.status(400).json({
+          success: false,
+          message: "Sort can only be 'asc' or 'desc'."
+        });
+      }
+      users = await User.findAll({ limit: limitValue, offset: offset, order: [['username', sort.toUpperCase()]], raw: true });
+    } else {
+      users = await User.findAll({ limit: limitValue, offset: offset, raw: true });
+    }
 
     users.forEach((user) => {
       user.links = [
@@ -120,12 +122,12 @@ exports.register = async (req, res) => {
   }
 };
 
-// Obtains information about specified user. Route only available for admins (authentication token must be provided in header).
+// Obtains information about specified user. Route only available for admins.
 exports.findUser = async (req, res) => {
   let { field } = req.query;
 
   try {
-    let userFound = await User.findByPk(req.params.idT)
+    let userFound = await User.findByPk(req.params.idU)
 
     if (!userFound) {
       return res.status(404).json({
@@ -138,7 +140,7 @@ exports.findUser = async (req, res) => {
 
     if (field) {
       if (field == 'favorites') {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.favorites,
@@ -148,7 +150,7 @@ exports.findUser = async (req, res) => {
           ]
         });
       } else if (field == 'reservations') {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.reservation,
@@ -158,7 +160,7 @@ exports.findUser = async (req, res) => {
           ]
         });
       } else if (field == 'properties') {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.property,
@@ -170,7 +172,7 @@ exports.findUser = async (req, res) => {
       }
     } else {
       if (userFound.user_role == 'owner') {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.favorites,
@@ -195,7 +197,7 @@ exports.findUser = async (req, res) => {
           ]
         });
       } else {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.favorites,
@@ -258,30 +260,50 @@ exports.findUser = async (req, res) => {
   }
 };
 
-
-exports.update = async (req, res) => {
+// Handles user profile editing.
+exports.editProfile = async (req, res) => {
   try {
-    let user = await User.findByPk(req.params.idT);
-    if (user === null) {
-      return res.status(404).json({
-        success: false,
-        data: `Cannot find any user with username ${req.params.idT}`,
-      });
-    }
+    if (req.loggedUserId == req.params.idU) {
+      let user = await User.findByPk(req.params.idU);
+      if (user === null) {
+        return res.status(404).json({
+          success: false,
+          msg: `Cannot find any user with username ${req.params.idU}`,
+        });
+      }
 
-    let affectedRows = await User.update(req.body, {
-      where: { username: req.params.idT },
-    });
-    if (affectedRows[0] === 0) {
-      return res.status(200).json({
+      if (!req.body || Object.keys(req.body).length == 0) {
+        return res.status(400).json({
+          success: false,
+          msg: "At least one field must be provided to update.",
+        });
+      } else if (!req.body.first_name & !req.body.last_name & !req.body.username & !req.body.phone_number) {
+        return res.status(400).json({
+          success: false,
+          msg: "You can only edit your first name, last name, username or phone number.",
+        });
+      }
+
+      let affectedRows = await User.update(req.body, {
+        where: { username: req.params.idU },
+      });
+
+      if (affectedRows[0] === 0) {
+        return res.status(200).json({
+          success: true,
+          msg: `No updates were made on user with username ${req.params.idU}.`,
+        });
+      }
+
+      return res.json({
         success: true,
-        msg: `No updates were made on user with username ${req.params.idT}.`,
+        msg: `User with username ${req.params.idU} was updated successfully.`,
       });
     }
 
-    return res.json({
-      success: true,
-      msg: `User with username ${req.params.idT} was updated successfully.`,
+    return res.status(403).json({
+      success: false,
+      msg: "You are not authorized to edit other users.",
     });
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -297,7 +319,7 @@ exports.update = async (req, res) => {
     } else {
       res.status(500).json({
         success: false,
-        msg: `Error updating user with username ${req.params.idT}.`,
+        msg: `Error updating user with username ${req.params.idU}.`,
       });
     }
   }
@@ -307,7 +329,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     if (req.loggedUserRole === "admin") {
-      let result = await User.destroy({ where: { username: req.params.idT } });
+      let result = await User.destroy({ where: { username: req.params.idU } });
       if (result == 1) {
         return res.json({
           success: true,
@@ -320,8 +342,8 @@ exports.delete = async (req, res) => {
         msg: `The specified username does not exist.`,
       });
     } else {
-      if (req.loggedUserId == req.params.idT) {
-        let result = await User.destroy({ where: { username: req.params.idT } });
+      if (req.loggedUserId == req.params.idU) {
+        let result = await User.destroy({ where: { username: req.params.idU } });
         if (result == 1) {
           return res.json({
             success: true,
@@ -419,7 +441,7 @@ exports.addFavorite = async (req, res) => {
       });
 
     await Favorite.create({
-      username: req.params.idT,
+      username: req.params.idU,
       property_ID: req.body.property_ID,
     });
 
@@ -427,7 +449,7 @@ exports.addFavorite = async (req, res) => {
       success: true,
       msg: "Property added to favorites.",
       links: [
-        { rel: "self", href: `/users/${req.params.idT}?field=favorites`, method: "GET" }
+        { rel: "self", href: `/users/${req.params.idU}?field=favorites`, method: "GET" }
       ],
     });
 
@@ -475,3 +497,56 @@ exports.removeFavorite = async (req, res) => {
     }
   }
 };
+
+// Handles updating user role.
+exports.editRole = async (req, res) => {
+  try {
+    let user = await User.findByPk(req.loggedUserId);
+    if (user === null) {
+      return res.status(404).json({
+        success: false,
+        msg: `Cannot find any user with username ${req.loggedUserId}`,
+      });
+    }
+
+    if (!req.body.user_role) {
+      return res.status(400).json({
+        success: false,
+        msg: "The new role must be provided to update.",
+      });
+    }
+
+    let affectedRows = await User.update(req.body, {
+      where: { username: req.loggedUserId },
+    });
+
+    if (affectedRows[0] === 0) {
+      return res.status(200).json({
+        success: true,
+        msg: `No updates were made on user with username ${req.loggedUserId}.`,
+      });
+    }
+
+    return res.json({
+      success: true,
+      msg: `User with username ${req.loggedUserId} was updated successfully.`,
+    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        msg: error.errors.map((e) => e.message)
+      });
+    } else if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        msg: `Error updating user with username ${req.params.idU}.`,
+      });
+    }
+  }
+}

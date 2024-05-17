@@ -22,15 +22,15 @@ router.route("/")
   .get(authController.verifyToken, userController.findAll)
   .post(userController.register);
 
-router.route("/:idT")
+router.route("/:idU")
   .get(authController.verifyToken, userController.findUser)
-  .put(userController.update)
+  .patch(authController.verifyToken, userController.editProfile)
   .delete(authController.verifyToken, userController.delete);
 
-router.route("/:idT/favorites")
+router.route("/:idU/favorites")
   .post(authController.verifyToken, userController.addFavorite);
 
-router.route("/:idT/favorites/:idP")
+router.route("/:idU/favorites/:idP")
   .delete(authController.verifyToken, userController.removeFavorite);
 
 router.route("/login")
@@ -38,6 +38,9 @@ router.route("/login")
 
 router.route("/reset-password-email")
   .post(userController.recoverEmail);
+
+router.route('/role')
+  .post(authController.verifyToken, userController.editRole)
 
 router.all("*", function (req, res) {
   //send an predefined error message
