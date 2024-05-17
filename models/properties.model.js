@@ -105,12 +105,14 @@ module.exports = (sequelize, DataTypes) => {
     property.hasMany(models.reservation, {
       foreignKey: "property_ID",
       as: "reservations",
+      onDelete: 'CASCADE'
     });
 
     // FAVORITES
     property.hasMany(models.favorites, {
       foreignKey: "property_ID",
       as: "favorites",
+      onDelete: 'CASCADE'
     });
 
     // PHOTOS
@@ -118,26 +120,25 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "ID",
       targetKey: "ID",
       as: "photos",
+      onDelete: 'CASCADE'
     });
 
     // MESSAGES
-    // property.hasMany(models.message, {
-    //   onDelete: "cascade",
-    //   foreignKey: "username", // username is FK in reservation
-    //   sourceKey: "username", // username is PK in user
-    //   as: "messages",
-    // });
+    property.hasMany(models.message, {
+      onDelete: "cascade",
+      foreignKey: "property_ID", // username is FK in reservation
+      sourceKey: "ID", // username is PK in user
+      as: "messages",
+    });
 
-    // // AMENITY - TABLE WITH IDs
-    // property.associate = (models) => {
-    //   property.belongsToMany(models.amenity, {
-    //     through: "amenity_property",
-    //     foreignKey: "property_ID",
-    //     otherKey: "amenity_ID",
-    //     as: "amenities",
-    //     timestamps: false
-    //   });
-    // };
+    // AMENITY - TABLE WITH IDs
+    property.belongsToMany(models.amenity, {
+      through: "amenity_property",
+      foreignKey: "property_ID",
+      otherKey: "amenity_ID",
+      as: "amenities",
+      timestamps: false
+    });
   };
 
   return property;

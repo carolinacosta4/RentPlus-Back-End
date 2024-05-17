@@ -70,6 +70,7 @@ module.exports = (sequelize, DataTypes) => {
     reservation.hasMany(models.payment, {
       foreignKey: "reservation_ID",
       as: "payments",
+      onDelete: 'CASCADE'
     });
 
     // PROPERTY
@@ -88,6 +89,7 @@ module.exports = (sequelize, DataTypes) => {
     reservation.hasMany(models.review, {
       foreignKey: "reservation_ID",
       as: "reviews",
+      onDelete: 'CASCADE'
     });
   };
 
