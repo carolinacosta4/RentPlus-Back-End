@@ -1,5 +1,6 @@
 const express = require("express");
 const userController = require("../controllers/users.controller");
+const authController = require("../controllers/auth.controller");
 
 // express router
 let router = express.Router();
@@ -18,16 +19,19 @@ router.use((req, res, next) => {
 });
 
 router.route("/")
-  .get(userController.findAll)
+  .get(authController.verifyToken, userController.findAll)
   .post(userController.register);
 
 router.route("/:idT")
-  .get(userController.findUser)
+  .get(authController.verifyToken, userController.findUser)
   .put(userController.update)
-  .delete(userController.delete);
+  .delete(authController.verifyToken, userController.delete);
 
 router.route("/:idT/favorites")
-  .post(userController.favorites);
+  .post(authController.verifyToken, userController.addFavorite);
+
+router.route("/:idT/favorites/:idP")
+  .delete(authController.verifyToken, userController.removeFavorite);
 
 router.route("/login")
   .post(userController.login);
