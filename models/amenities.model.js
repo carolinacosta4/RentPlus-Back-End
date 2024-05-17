@@ -51,6 +51,7 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "amenity_ID",
       otherKey: "property_ID",
       as: "properties",
+      timestamps: false
     });
   };
 

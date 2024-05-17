@@ -7,17 +7,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
-        validate: { notNull: { msg: "Username is required!" } }
+        validate: { notNull: { msg: "Username is required!" }, is: { args: /^[a-zA-Z0-9_]+$/, msg: "The username contains invalid characters. Only alphanumeric characters and underscores are allowed." } }
       },
       email: {
         type: DataTypes.STRING,
         allowNull: false,
         isEmail: true,
-        validate: { notNull: { msg: "Email is required!" }, isEmail: { msg: "Email invalid!" }, }
+        unique: true,
+        validate: { notNull: { msg: "Email is required!" }, isEmail: { msg: "Email invalid!" } }
       },
       phone_number: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: { is: { args: /^[0-9-()+]+$/, msg: "The phone number provided is not in a valid format." } }
       },
       user_role: {
         type: DataTypes.STRING,
@@ -31,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
       password: {
         type: DataTypes.STRING,
         allowNull: false,
+        trim: true,
         validate: { notNull: { msg: "Password is required!" } }
       },
       is_confirmed: {
@@ -68,13 +71,14 @@ module.exports = (sequelize, DataTypes) => {
 
   // ASSOCIATE
 
- user.associate = (models) => {
+  user.associate = (models) => {
     // PROPERTIES
     user.hasMany(models.property, {
       onDelete: "cascade",
       foreignKey: "owner_username", // owner_username is FK in property
       sourceKey: "username", // username is PK in user
       as: "properties",
+      onDelete: 'CASCADE'
     });
 
     // RESERVATIONS
@@ -83,6 +87,7 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "username", // username is FK in reservation
       sourceKey: "username", // username is PK in user
       as: "reservations",
+      onDelete: 'CASCADE'
     });
 
     // FAVORITES
@@ -91,6 +96,7 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "username", // username is FK in favorites
       sourceKey: "username", // username is PK in user
       as: "favorites",
+      onDelete: 'CASCADE'
     });
 
     // REVIEWS
@@ -99,6 +105,7 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "username", // username is FK in reservation
       sourceKey: "username", // username is PK in user
       as: "reviews",
+      onDelete: 'CASCADE'
     });
 
     // MESSAGES
@@ -114,8 +121,9 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "receiver_username", // receiver_username is FK in message
       sourceKey: "username", // username is PK in user
       as: "messages_received",
+      onDelete: 'CASCADE'
     });
-  }; 
+  };
 
   return user;
 };
