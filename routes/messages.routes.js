@@ -1,6 +1,7 @@
 const express = require('express');
 const MessageController = require("../controllers/messages.controller");
 let router = express.Router();
+const authController = require("../controllers/auth.controller");
 
 router.use((req, res, next) => {
     const start = Date.now();
@@ -15,13 +16,13 @@ router.route('/')
     .get(MessageController.findAll)
 
 router.route('/')
-    .post(MessageController.bodyValidator, MessageController.create)
+    .post(authController.verifyToken, MessageController.bodyValidator, MessageController.create)
 
 router.route('/:username')
-    .get(MessageController.findAllFromSpecificUser);
+    .get(authController.verifyToken, MessageController.findAllFromSpecificUser);
 
 router.route('/:username/:ID')
-    .delete(MessageController.deleteMessage);
+    .delete(authController.verifyToken, MessageController.deleteMessage);
 
 
 module.exports = router;

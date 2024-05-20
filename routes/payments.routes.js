@@ -1,6 +1,7 @@
 const express = require('express');
 const paymentController = require("../controllers/payments.controller");
 let router = express.Router();
+const authController = require("../controllers/auth.controller");
 
 router.use((req, res, next) => {
     const start = Date.now();
@@ -11,13 +12,11 @@ router.use((req, res, next) => {
     next()
 })
 
-
 router.route('/')
     .get(paymentController.findAll)
-    // .post(paymentController.create); NÃO SEI SE É AQUI OU NA PÁGINA DE BOOKINGS
 
 router.route('/:ID')
-    .get(paymentController.findOne)
+    .get(authController.verifyToken, paymentController.findOne)
 
 
 router.all('*', function (req, res) {
