@@ -4,6 +4,7 @@ const { ValidationError } = require('sequelize');
 const { Op } = require('sequelize');
 const Property = db.property
 
+// Only for programmers to analyze the changes made during testings
 exports.findAll = async (req, res) => {
 
     try {
@@ -30,10 +31,8 @@ exports.findAll = async (req, res) => {
     }
 };
 
-
+// Obtains all messages of logged user (authentication token must be provided in header). Has an optional limit counter.
 exports.findAllFromSpecificUser = async (req, res, next) => {
-    // Obtains all messages of logged user (authentication token must be provided in header). Has an optional limit counter.
-
     if (req.loggedUserId == req.params.username) {
         try {
             const { limit = 20 } = req.query;
@@ -100,10 +99,8 @@ exports.bodyValidator = async (req, res, next) => {
     next()
 };
 
+// Handles sending messages to another user (authentication token must be provided in header).
 exports.create = async (req, res) => {
-    // Handles sending messages to another user (authentication token must be provided in header). 
-
-    console.log(req.loggedUserId);
     try {
         const createdAt = new Date();
 
@@ -132,10 +129,8 @@ exports.create = async (req, res) => {
     };
 };
 
+// Handles deletion of a sent message (authentication token must be provided in header).
 exports.deleteMessage = async (req, res) => {
-    // Handles deletion of a sent message (authentication token must be provided in header). 
-
-    console.log(req.loggedUserId);
     if (req.loggedUserId == req.params.username) {
         try {
             const messageID = req.params.ID;

@@ -4,8 +4,8 @@ const { ValidationError } = require('sequelize');
 const Property = db.property
 const Payment = db.payment;
 
+// Only for programmers to analyze the changes made during testings
 exports.findAll = async (req, res) => {
-    // Only for programmers to see the changes made during testings
     try {
         const reservs = await Reservation.findAll({
             include: [
@@ -33,14 +33,14 @@ exports.findAll = async (req, res) => {
     }
 };
 
-exports.findOne = async (req, res) => {
-    // Obtains information about a specified booking (authentication token must be provided in header). 
+// Obtains information about a specified booking (authentication token must be provided in header).
+exports.findOne = async (req, res) => { 
     const username = req.params.username
     if (req.loggedUserId == username) {
         try {
-            if (!parseInt(req.params.ID)) {
+            if (!parseInt(req.params.ID) || !req.params.ID) {
                 return res.status(400).json({
-                    error: "ID must be an integer"
+                    error: "ID must be an integer and is required"
                 })
             }
 
@@ -146,9 +146,8 @@ exports.bodyValidator = async (req, res, next) => {
 
 };
 
+// Handles user booking by sending a request of booking to the owner (authentication token must be provided in header).
 exports.create = async (req, res) => {
-    // Handles user booking by sending a request of booking to the owner (authentication token must be provided in header). 
-
     if (req.loggedUserId) {
         const t = await db.sequelize.transaction();
 
@@ -220,9 +219,8 @@ exports.create = async (req, res) => {
     }
 };
 
+// Handles owner of property confirmation or cancelation of booking order (authentication token must be provided in header). 
 exports.changeStatus = async (req, res) => {
-    // Handles owner of property confirmation or cancelation of booking order (authentication token must be provided in header). 
-
     const reservationId = req.params.ID;
     const newStatusName = req.body.status_name;
     const reservation = await Reservation.findByPk(reservationId);
@@ -282,9 +280,8 @@ exports.changeStatus = async (req, res) => {
     }
 };
 
-
+// Handles cancelation of booking. A booking can only be canceled if there is more than 3 days until date in (authentication token must be provided in header). 
 exports.deleteReservation = async (req, res) => {
-    // Handles cancelation of booking. A booking can only be canceled if there is more than 3 days until date in (authentication token must be provided in header). 
     const reservationId = req.params.ID;
     const reservation = await Reservation.findByPk(reservationId);
     
@@ -345,8 +342,9 @@ exports.deleteReservation = async (req, res) => {
     }
 };
 
+// Obtains general information about all the logged user reservations (authentication token must be provided in header). 
 exports.getUserReservations = async (req, res) => {
-    // Obtains general information about all the logged user reservations (authentication token must be provided in header). 
+    
     const username = req.params.username
     if (req.loggedUserId == username) {
         try {
