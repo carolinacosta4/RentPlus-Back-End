@@ -172,12 +172,30 @@ exports.create = async (req, res) => {
 
             await t.commit(); // Commit da transação se tudo estiver correto
 
+            let reservation = await Reservation.findByPk(newReservation.ID, {
+                include: [
+                    {
+                        model: db.status_reservation,
+                        as: 'status',
+                        attributes: ['status_name']
+                    },
+                    {
+                        model: db.payment,
+                        as: 'payments',
+                        include: [{
+                            model: db.status_payment,
+                            as: 'status',
+                            attributes: ['status_name']
+                        }],
+                    }
+                ]
+            })
+
             return res.status(201).json({
                 success: true,
                 msg: "Reservation and payment successfully created with status 'pending'.",
                 data: {
-                    reservation: newReservation,
-                    payment: newPayment
+                    reservation: reservation
                 }
             });
         } catch (err) {
