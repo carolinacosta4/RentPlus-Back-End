@@ -4,7 +4,7 @@ const { ValidationError } = require('sequelize');
 const Property = db.property
 const Payment = db.payment;
 
- // Only for programmers to analyze the changes made during testings
+// Only for programmers to analyze the changes made during testings
 exports.findAll = async (req, res) => {
     try {
         const reservs = await Reservation.findAll({

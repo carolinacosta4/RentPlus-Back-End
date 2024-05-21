@@ -4,15 +4,7 @@ const { ValidationError } = require('sequelize');
 const Reservation = db.reservation
 const Property = db.property
 
-// exports.bodyValidator = (req, res, next) => {
-//     if (!req.body.ID || !req.body.reservation_ID || !req.body.status_payment  || !req.body.amount  || !req.body.payment_type) {
-//         return res.status(400).json({
-//             error: "Some information are missing"
-//         })
-//     }
-//     next()
-// };
-
+// Only for programmers to analyze the changes made during testings
 exports.findAll = async (req, res) => {
     try {
         const payments = await Payment.findAll({
@@ -34,6 +26,7 @@ exports.findAll = async (req, res) => {
     }
 };
 
+// Create a payment automatically with the creation of a reservation
 exports.create = async (req, res) => {
     try {
         const { payment_type } = req.body;
@@ -78,9 +71,8 @@ exports.create = async (req, res) => {
     }
 };
 
-exports.findOne = async (req, res) => {
-    // Access specific payment. 
-
+// Access specific payment.
+exports.findOne = async (req, res) => { 
     try {
         if (!parseInt(req.params.ID)) {
             return res.status(400).json({
@@ -139,9 +131,8 @@ exports.findOne = async (req, res) => {
     };
 };
 
+// Handles payment status of a specific reservation
 exports.changeStatus = async (req, res) => {
-    // Handles payment status of a specific reservation 
-
     try {
         const reservationId = req.params.ID;
         const newStatusName = req.body.status_name;
