@@ -116,7 +116,6 @@ exports.bodyValidator = async (req, res, next) => {
     };
 
 
-
 // exports.create = async (req, res, next) => {
 //     try {
 //         let newReservation = await Reservation.create(req.body);

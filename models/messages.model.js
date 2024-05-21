@@ -56,12 +56,14 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "sender_username", // receiver_username is FK in message
       targetKey: "username", // username is PK in the user
       as: "sender",
+      onDelete: 'CASCADE'
     });
     //
     message.belongsTo(models.user, {
       foreignKey: "receiver_username", // receiver_username is FK in message
       targetKey: "username", // username is PK in the user
       as: "receiver",
+      onDelete: 'CASCADE'
     });
 
     // PROPERTY

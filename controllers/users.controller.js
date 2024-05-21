@@ -5,6 +5,7 @@ const config = require("../config/db.config.js");
 const db = require("../models/index.js");
 const User = db.user;
 const Favorite = db.favorites
+const Property = db.property
 
 const { Op, ValidationError, Sequelize } = require("sequelize");
 
@@ -18,11 +19,12 @@ exports.findAll = async (req, res) => {
   let users
 
   try {
-    if (req.loggedUserRole !== "admin")
+    if (req.loggedUserRole !== "admin") {
       return res.status(403).json({
         success: false,
         msg: "You don't have permission to access this route."
       });
+    }
 
     if (sort) {
       if (sort.toLowerCase() != 'asc' && sort.toLowerCase() != 'desc') {
@@ -75,8 +77,10 @@ exports.findAll = async (req, res) => {
 // Handles user registration to join the platform
 exports.register = async (req, res) => {
   try {
-    if (!req.body && !req.body.username && !req.body.password)
-      return res.status(400).json({ success: false, msg: "Username and password are mandatory" });
+    if (!req.body || !req.body.username || !req.body.password || !req.body.email) {
+      console.log("here");
+      return res.status(400).json({ success: false, msg: "Username, email and password are mandatory" });
+    }
 
     let searchUser = await User.findOne({ where: { username: req.body.username } })
     if (searchUser) {
@@ -127,6 +131,13 @@ exports.findUser = async (req, res) => {
   let { field } = req.query;
 
   try {
+    if (req.loggedUserRole !== "admin" & req.loggedUserId != req.params.idU) {
+      return res.status(403).json({
+        success: false,
+        msg: "You don't have permission to access this route."
+      });
+    }
+
     let userFound = await User.findByPk(req.params.idU)
 
     if (!userFound) {
@@ -159,13 +170,13 @@ exports.findUser = async (req, res) => {
             }
           ]
         });
-      } else if (field == 'properties') {
+      } else if (field == 'properties' & req.loggedUserRole != "owner") {
         user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.property,
               as: 'properties',
-              attributes: ['title']
+              attributes: ['title', 'ID']
             }
           ]
         });
@@ -263,15 +274,15 @@ exports.findUser = async (req, res) => {
 // Handles user profile editing.
 exports.editProfile = async (req, res) => {
   try {
-    if (req.loggedUserId == req.params.idU) {
-      let user = await User.findByPk(req.params.idU);
-      if (user === null) {
-        return res.status(404).json({
-          success: false,
-          msg: `Cannot find any user with username ${req.params.idU}`,
-        });
-      }
+    let user = await User.findByPk(req.params.idU);
+    if (user === null) {
+      return res.status(404).json({
+        success: false,
+        msg: `Cannot find any user with username ${req.params.idU}`,
+      });
+    }
 
+    if (req.loggedUserId == req.params.idU) {
       if (!req.body || Object.keys(req.body).length == 0) {
         return res.status(400).json({
           success: false,
@@ -343,6 +354,7 @@ exports.delete = async (req, res) => {
       });
     } else {
       if (req.loggedUserId == req.params.idU) {
+        console.log(req.loggedUserId, req.params.idU);
         let result = await User.destroy({ where: { username: req.params.idU } });
         if (result == 1) {
           return res.json({
@@ -371,6 +383,7 @@ exports.delete = async (req, res) => {
     } else {
       res.status(500).json({
         error: "Server Error",
+        error2: error,
         msg: "An unexpected error occurred. Please try again later."
       });
     }
@@ -390,7 +403,7 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ id: user.username, role: user.user_role },
       config.SECRET, {
-      expiresIn: '24h' // 24 hours
+      expiresIn: '24h'
     });
 
     return res.status(200).json({ success: true, accessToken: token });
@@ -434,11 +447,20 @@ exports.recoverEmail = async (req, res) => {
 // Handle user adding favorites on POST
 exports.addFavorite = async (req, res) => {
   try {
-    if (!req.body.property_ID)
+    if (!req.body.property_ID) {
       return res.status(400).json({
         success: false,
         msg: "Property ID is mandatory"
       });
+    }
+
+    let property = await Property.findOne({ where: { ID: req.body.property_ID } })
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        msg: "The specified properties ID does not exist."
+      });
+    }
 
     await Favorite.create({
       username: req.params.idU,
@@ -471,6 +493,14 @@ exports.addFavorite = async (req, res) => {
 // Removes specified property from favorites 
 exports.removeFavorite = async (req, res) => {
   try {
+    let user = await User.findOne({ where: { username: req.params.idU } })
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        msg: "The specified username does not exist."
+      });
+    }
+
     let result = await Favorite.destroy({ where: { property_ID: req.params.idP } });
     if (result == 1) {
       return res.json({
@@ -501,14 +531,6 @@ exports.removeFavorite = async (req, res) => {
 // Handles updating user role.
 exports.editRole = async (req, res) => {
   try {
-    let user = await User.findByPk(req.loggedUserId);
-    if (user === null) {
-      return res.status(404).json({
-        success: false,
-        msg: `Cannot find any user with username ${req.loggedUserId}`,
-      });
-    }
-
     if (!req.body.user_role) {
       return res.status(400).json({
         success: false,

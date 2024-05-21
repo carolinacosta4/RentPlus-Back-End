@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
           model: "user",
           key: "username",
         },
+        onDelete: "cascade",
       },
       property_type: {
         type: DataTypes.INTEGER,
@@ -92,6 +93,7 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "owner_username",
       targetKey: "username",
       as: "owner",
+      onDelete: 'CASCADE',
     });
 
     // TYPE

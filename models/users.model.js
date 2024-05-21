@@ -78,7 +78,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "owner_username", // owner_username is FK in property
       sourceKey: "username", // username is PK in user
       as: "properties",
-      onDelete: 'CASCADE'
     });
 
     // RESERVATIONS
@@ -87,7 +86,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "username", // username is FK in reservation
       sourceKey: "username", // username is PK in user
       as: "reservations",
-      onDelete: 'CASCADE'
     });
 
     // FAVORITES
@@ -96,7 +94,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "username", // username is FK in favorites
       sourceKey: "username", // username is PK in user
       as: "favorites",
-      onDelete: 'CASCADE'
     });
 
     // REVIEWS
@@ -105,7 +102,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "username", // username is FK in reservation
       sourceKey: "username", // username is PK in user
       as: "reviews",
-      onDelete: 'CASCADE'
     });
 
     // MESSAGES
@@ -121,7 +117,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "receiver_username", // receiver_username is FK in message
       sourceKey: "username", // username is PK in user
       as: "messages_received",
-      onDelete: 'CASCADE'
     });
   };
 

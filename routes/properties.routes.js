@@ -25,7 +25,6 @@ router.route("/:idP/reviews")
   .post(authController.verifyToken, propertyController.createReview);
 
 router.route("/:idP/reviews/:idR")
-  .put(propertyController.updateReview)
   .delete(authController.verifyToken, propertyController.deleteReview);
 
 
