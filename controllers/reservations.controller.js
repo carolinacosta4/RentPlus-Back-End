@@ -224,7 +224,7 @@ exports.bodyValidator = async (req, res, next) => {
 
 };
 
-// Handles user booking by sending a request of booking to the owner (authentication token must be provided in header).
+// Handles user reservation by sending a request of reservation to the owner (authentication token must be provided in header).
 exports.create = async (req, res) => {
     if (req.loggedUserId) {
         const t = await db.sequelize.transaction();
@@ -302,7 +302,7 @@ exports.create = async (req, res) => {
     }
 };
 
-// Handles owner of property confirmation or cancelation of booking order (authentication token must be provided in header). 
+// Handles owner of property confirmation or cancelation of reservation order (authentication token must be provided in header). 
 exports.changeStatus = async (req, res) => {
     const reservationId = req.params.ID;
     const newStatusName = req.body.status_name;
@@ -370,7 +370,7 @@ exports.changeStatus = async (req, res) => {
     }
 };
 
-// Handles cancelation of booking. A booking can only be canceled if there is more than 3 days until date in (authentication token must be provided in header). 
+// Handles cancelation of reservation. A reservation can only be canceled if there is more than 3 days until date in (authentication token must be provided in header). 
 exports.deleteReservation = async (req, res) => {
     const reservationId = req.params.ID;
     const reservation = await Reservation.findByPk(reservationId);
