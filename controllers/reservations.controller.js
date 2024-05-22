@@ -3,6 +3,7 @@ const Reservation = db.reservation;
 const { ValidationError } = require('sequelize');
 const Property = db.property
 const Payment = db.payment;
+const { Op } = require('sequelize');
 
 // Only for programmers to analyze the changes made during testings
 exports.findAll = async (req, res) => {
@@ -25,7 +26,7 @@ exports.findAll = async (req, res) => {
                 }
             ],
             attributes: { exclude: ['status_reservation_ID',] },
-            order: [['ID', 'ASC']]
+            order: [['ID', 'DESC']]
         });  // TESTE
         res.status(200).json(reservs);
     } catch (error) {
@@ -33,14 +34,16 @@ exports.findAll = async (req, res) => {
     }
 };
 
-// Obtains information about a specified booking (authentication token must be provided in header).
-exports.findOne = async (req, res) => { 
+// Obtains information about a specified reservation (authentication token must be provided in header).
+exports.findOne = async (req, res) => {
     const username = req.params.username
     if (req.loggedUserId == username) {
         try {
             if (!parseInt(req.params.ID) || !req.params.ID) {
                 return res.status(400).json({
-                    error: "ID must be an integer and is required"
+                    success: false,
+                    error: "Invalid ID value",
+                    msg: "ID must be an integer and is required"
                 })
             }
 
@@ -68,14 +71,15 @@ exports.findOne = async (req, res) => {
             if (reservation === null) {
                 return res.status(404).json({
                     success: false,
-                    msg: `Can't find any reservation with id ${req.params.ID}`
+                    error: "Reservation Not Found",
+                    msg: "The specified reservation ID does not exist."
                 })
             }
             if (reservation.username != username) {
                 return res.status(403).json({
                     success: false,
                     error: "Forbidden",
-                    msg: "You don’t have permission to see information about this reservation. You can only see your own reservations",
+                    msg: "You don’t have permission to access this route",
                 });
             }
             else {
@@ -86,7 +90,7 @@ exports.findOne = async (req, res) => {
             }
         } catch (err) {
             res.status(500).json({
-                success: false, msg: err.message || "Some error occurred while finding the payment."
+                success: false, msg: err.message || "An unexpected error occurred. Please try again later"
             })
         };
     }
@@ -94,7 +98,7 @@ exports.findOne = async (req, res) => {
         return res.status(403).json({
             success: false,
             error: "Forbidden",
-            msg: "You don’t have permission to see information about this reservation. You can only see your own reservations",
+            msg: "You don’t have permission to access this route",
         });
     }
 };
@@ -104,43 +108,117 @@ exports.bodyValidator = async (req, res, next) => {
         const property = await Property.findByPk(req.body.property_ID);
         if (!property) {
             return res.status(404).json({
-                error: `There is no property with the ID ${req.body.property_ID}`
+                success: false,
+                error: "Not Found",
+                msg: `There is no property with the ID ${req.body.property_ID}`
             });
         }
 
         if (!req.body.property_ID || !req.body.dateIn || !req.body.dateOut || !req.body.total_price || !req.body.payment_type) {
             return res.status(400).json({
-                error: "Some required information are missing"
+                success: false,
+                error: "Missing required field",
+                msg: "property_ID, dateIn, dateOut and payment_type and total_price are required"
             })
         }
         if (isNaN(req.body.property_ID) || parseInt(req.body.property_ID) != req.body.property_ID) {
             return res.status(400).json({
-                error: "Property ID must be an integer number"
+                success: false,
+                error: "Invalid ID value",
+                msg: "Property ID must be an integer number"
             })
         }
 
         if (isNaN(req.body.total_price)) {
             return res.status(400).json({
-                error: "Total Price must be a number"
+                success: false,
+                error: "Invalid Price value",
+                msg: "Total Price must be a number"
             });
         }
         if (isNaN(req.body.payment_type) || !req.body.payment_type || parseInt(req.body.payment_type) != req.body.payment_type) {
             return res.status(400).json({
-                error: "Payment type is required must be an integer number"
+                success: false,
+                error: "Invalid Payment Type value",
+                msg: "Payment type is required must be an integer number"
             })
         }
 
         const pType = await db.payment_type.findByPk(req.body.payment_type);
         if (!pType) {
             return res.status(404).json({
-                error: `There is no payment type with the ID ${req.body.payment_type}`
+                success: false,
+                error: "Payment Type Not Found",
+                msg: `There is no payment type with the ID ${req.body.payment_type}`
             });
         }
+
+        let today = new Date()
+        const dateInB = new Date(req.body.dateIn);
+        const dateOutB = new Date(req.body.dateOut)
+        console.log(today);
+        if (dateInB < today || dateOutB <= today) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid date",
+                msg: `You can only make reservations for future days`
+            });
+        }
+
+        const existingReservations = await Reservation.findAll({
+            where: {
+                property_ID: req.body.property_ID,
+                [Op.or]: [
+                    {
+                        dateIn: {
+                            [Op.between]: [dateInB, dateOutB]
+                        }
+                    },
+                    {
+                        dateOut: {
+                            [Op.between]: [dateInB, dateOutB]
+                        }
+                    },
+                    {
+                        [Op.and]: [
+                            {
+                                dateIn: {
+                                    [Op.lte]: dateInB
+                                }
+                            },
+                            {
+                                dateOut: {
+                                    [Op.gte]: dateOutB
+                                }
+                            }
+                        ]
+                    }
+                ],
+                [Op.or]: [
+                    {
+                        status_reservation_ID: 1
+                    }, {
+                        status_reservation_ID: 3
+                    }
+                ]
+            }
+        })
+        if (existingReservations.length > 0) {
+            console.log(existingReservations);
+            return res.status(400).json({
+                success: false,
+                error: "Property already booked",
+                msg: "You can't proceed with the reservation because there is already a reservation during the chosen dates."
+            });
+        }
+
         next()
     }
     catch (err) {
         res.status(500).json({
-            error: "Internal server error"
+            success: false,
+            error: "Server error",
+            msg: "An unexpected error occurred. Please try again later"
         });
     }
 
@@ -192,7 +270,7 @@ exports.create = async (req, res) => {
 
             return res.status(201).json({
                 success: true,
-                msg: "Reservation and payment successfully created with status 'pending'.",
+                msg: "Reservation created successfully.",
                 data: {
                     reservation: reservation
                 }
@@ -201,11 +279,16 @@ exports.create = async (req, res) => {
             await t.rollback(); // Rollback da transação em caso de erro
 
             if (err instanceof ValidationError) {
-                return res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
+                return res.status(400).json({
+                    success: false,
+                    error: "Bad Request",
+                    msg: err.message
+                });
             } else {
                 return res.status(500).json({
                     success: false,
-                    msg: err.message || "Some error occurred while creating the reservation and payment."
+                    error: "Server error",
+                    msg: err.message || "An unexpected error occurred. Please try again later"
                 });
             }
         }
@@ -228,7 +311,8 @@ exports.changeStatus = async (req, res) => {
     if (!reservation) {
         return res.status(404).json({
             success: false,
-            msg: `There is no reservation with the ID ${reservationId}`
+            error: "Reservation Not Found",
+            msg: "The specified reservation ID does not exist."
         });
     }
 
@@ -236,9 +320,10 @@ exports.changeStatus = async (req, res) => {
         try {
             const status = await db.status_reservation.findOne({ where: { status_name: newStatusName } });
             if (!status) {
-                return res.status(400).json({
+                return res.status(404).json({
                     success: false,
-                    msg: `There is no status with the name ${newStatusName}`
+                    error: "Missing required fields",
+                    msg: "Status can only be pending cancelled or booked"
                 });
             }
 
@@ -257,16 +342,21 @@ exports.changeStatus = async (req, res) => {
 
             res.status(200).json({
                 success: true,
-                msg: 'Reservation status successfully updated.',
+                msg: 'Reservation updated successfully.',
                 data: updatedReservation
             });
         } catch (err) {
             if (err instanceof ValidationError) {
-                res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
-            } else {
-                res.status(500).json({
+                return res.status(400).json({
                     success: false,
-                    msg: err.message || "Some error occurred while updating the status."
+                    error: "Bad Request",
+                    msg: err.message
+                });
+            } else {
+                return res.status(500).json({
+                    success: false,
+                    error: "Internal server error",
+                    msg: err.message || "Some error occurred while creating the reservation and payment."
                 });
             }
         }
@@ -275,7 +365,7 @@ exports.changeStatus = async (req, res) => {
         return res.status(403).json({
             success: false,
             error: "Forbidden",
-            msg: "You don’t have permission to change the status of this reservation. Only the property owners can do it.",
+            msg: "You don’t have permission to access this route. You need to be the guest or owner of the property."
         });
     }
 };
@@ -284,19 +374,21 @@ exports.changeStatus = async (req, res) => {
 exports.deleteReservation = async (req, res) => {
     const reservationId = req.params.ID;
     const reservation = await Reservation.findByPk(reservationId);
-    
+
     if (!reservation) {
         return res.status(404).json({
             success: false,
-            msg: `Can't find any reservation with id ${reservationId}`
+            error: "Reservation Not Found",
+            msg: "The specified reservation ID does not exist."
         });
     }
-    const property = await Property.findOne({where: {ID: reservation.property_ID}})
+    const property = await Property.findOne({ where: { ID: reservation.property_ID } })
 
     if (!property) {
         return res.status(404).json({
             success: false,
-            msg: `Can't find any properties with id ${reservation.property_ID}`
+            error: "Property Not Found",
+            msg: "The specified property ID does not exist."
         });
     }
 
@@ -310,6 +402,7 @@ exports.deleteReservation = async (req, res) => {
             if (diffDays <= 3) {
                 return res.status(400).json({
                     success: false,
+                    error: "Bad Request",
                     msg: 'Reservation can only be canceled if there is more than 3 days until date in.'
                 });
             }
@@ -317,6 +410,7 @@ exports.deleteReservation = async (req, res) => {
             if (dateIn < currentDate) {
                 return res.status(400).json({
                     success: false,
+                    error: "Bad Request",
                     msg: 'This reservation has already passed, cannot be deleted'
                 });
             }
@@ -324,12 +418,13 @@ exports.deleteReservation = async (req, res) => {
             await reservation.destroy();
             return res.status(200).json({
                 success: true,
-                msg: 'Reservation successfully deleted.'
+                msg: 'Reservation deleted successfully.'
             });
         } catch (err) {
             res.status(500).json({
                 success: false,
-                msg: err.message || 'Some error occurred while canceling the reservation.'
+                error: "Server Error",
+                msg: err.message || 'An unexpected error occurred. Please try again later'
             });
         }
     }
@@ -337,25 +432,62 @@ exports.deleteReservation = async (req, res) => {
         return res.status(403).json({
             success: false,
             error: "Forbidden",
-            msg: "You don’t have permission to delete this reservation",
+            msg: "You don’t have permission to access this route. You need to be the user who booked or the owner of the property",
         });
     }
 };
 
 // Obtains general information about all the logged user reservations (authentication token must be provided in header). 
 exports.getUserReservations = async (req, res) => {
-    
+
     const username = req.params.username
     if (req.loggedUserId == username) {
         try {
-            const { page = 1, limit = 10, sort = 'dateIn' } = req.query;
+            const { page = 1, limit = 10, sort = 'DESC' } = req.query;
             const offset = (page - 1) * limit;
+
+            if (req.query.sort) {
+                if (req.query.sort != "ASC" && req.query.sort != "DESC") {
+                    return res.status(400).json({
+                        success: false,
+                        error: "Invalid sort values",
+                        msg: "Sort can only be ‘desc’ or ‘asc’."
+                    });
+                }
+            }
+
+            if (req.query.limit) {
+                if (isNaN(req.query.limit) || !parseInt(limit)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "Invalid limit values",
+                        msg: `Limit must be an integer number`
+                    });
+                }
+            }
+
+            if (req.query.page) {
+                if (isNaN(req.query.page) || !parseInt(page)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: "Invalid page values",
+                        msg: `Page must be an integer number`
+                    });
+                }
+            }
 
             const reservations = await Reservation.findAndCountAll({
                 where: { username },
                 limit: parseInt(limit),
                 offset: offset,
-                order: [[sort, 'ASC']]
+                order: [['dateIn', sort]],
+                include: [
+                    {
+                        model: db.status_reservation,
+                        as: 'status',
+                        attributes: ['status_name']
+                    }
+                ]
             });
 
             return res.status(200).json({
@@ -370,14 +502,15 @@ exports.getUserReservations = async (req, res) => {
         } catch (err) {
             res.status(500).json({
                 success: false,
-                msg: err.message || 'Some error occurred while retrieving the reservations'
+                error: "Internal Server Error",
+                msg: err.message || 'An unexpected error occurred. Please try again later'
             });
         }
     } else {
         return res.status(403).json({
             success: false,
             error: "Forbidden",
-            msg: "You don’t have permission to see information about this user.",
+            msg: "You don’t have permission to access this route.",
         });
     }
 };

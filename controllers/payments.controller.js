@@ -137,26 +137,22 @@ exports.changeStatus = async (req, res) => {
         const reservationId = req.params.ID;
         const newStatusName = req.body.status_name;
 
-
         const reservation = await Reservation.findByPk(reservationId)
+        if (!reservation) {
+            return res.status(404).json({
+                success: false,
+                msg: `There is no reservation with the ID ${reservationId}`
+            });
+        }
+
         let property = await Property.findByPk(reservation.property_ID)
-
-        console.log("USERNAME: " + reservation.username);
-
-        if (req.loggedUserId == reservation.username || req.loggedUserId == property.owner_username || req.loggedUserRole != "admin") {
+        if (req.loggedUserId == reservation.username || req.loggedUserId == property.owner_username || req.loggedUserRole == "admin") {
             const payment = await Payment.findOne({ where: { reservation_ID: reservationId } });
-
-            if (!reservation) {
-                return res.status(404).json({
-                    success: false,
-                    msg: `There is no reservation with the ID ${reservationId}`
-                });
-            }
 
             if (!payment) {
                 return res.status(404).json({
                     success: false,
-                    msg: `There is no payment with related to the reservation ${reservationId}`
+                    msg: `There is no payment related to the reservation ${reservationId}`
                 });
             }
 
