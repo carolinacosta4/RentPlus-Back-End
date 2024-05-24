@@ -99,7 +99,17 @@ exports.bodyValidator = async (req, res, next) => {
             msg: "The specified receiver does not exist"
         });
     }
-    next()
+    if (req.loggedUserRole == 'owner' || receiverUser.user_role == 'owner') {
+        next()
+    } else {
+        return res.status(400).json({
+            success: false,
+            error: "Messages between not owners",
+            msg: "Messages can be sent only between owners e guests"
+        });
+    }
+
+    
 };
 
 // Handles sending messages to another user (authentication token must be provided in header).
