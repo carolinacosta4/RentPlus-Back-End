@@ -72,10 +72,12 @@ exports.create = async (req, res) => {
 };
 
 // Access specific payment.
-exports.findOne = async (req, res) => { 
+exports.findOne = async (req, res) => {
     try {
         if (!parseInt(req.params.ID)) {
             return res.status(400).json({
+                success: false,
+                error: "Invalid ID value",
                 error: "ID must be an integer"
             })
         }
@@ -98,7 +100,8 @@ exports.findOne = async (req, res) => {
         if (!payment) {
             return res.status(404).json({
                 success: false,
-                msg: `Can't find any payment with id ${req.params.ID}`
+                error: "Payment not found",
+                msg: "The specified payment ID does not exist"
             })
         }
 
@@ -119,14 +122,14 @@ exports.findOne = async (req, res) => {
             return res.status(403).json({
                 success: false,
                 error: "Forbidden",
-                msg: "You don’t have permission to access this payment.",
+                msg: "You don’t have permission to access this route.",
             });
         }
 
 
     } catch (err) {
         res.status(500).json({
-            success: false, msg: err.message || "Some error occurred while finding the payment."
+            success: false, msg: err.message || "An unexpected error occurred. Please try again later"
         })
     };
 };
@@ -137,34 +140,33 @@ exports.changeStatus = async (req, res) => {
         const reservationId = req.params.ID;
         const newStatusName = req.body.status_name;
 
-
         const reservation = await Reservation.findByPk(reservationId)
+        if (!reservation) {
+            return res.status(404).json({
+                success: false,
+                error: "Reservation not found",
+                msg: "The specified reservation ID does not exist"
+            });
+        }
+
         let property = await Property.findByPk(reservation.property_ID)
-
-        console.log("USERNAME: " + reservation.username);
-
         if (req.loggedUserId == reservation.username || req.loggedUserId == property.owner_username || req.loggedUserRole == "admin") {
             const payment = await Payment.findOne({ where: { reservation_ID: reservationId } });
-
-            if (!reservation) {
-                return res.status(404).json({
-                    success: false,
-                    msg: `There is no reservation with the ID ${reservationId}`
-                });
-            }
 
             if (!payment) {
                 return res.status(404).json({
                     success: false,
-                    msg: `There is no payment with related to the reservation ${reservationId}`
+                    error: "Payment not found",
+                    msg: `There is no payment related to the specified reservation`
                 });
             }
 
             const status = await db.status_payment.findOne({ where: { status_name: newStatusName } });
             if (!status) {
-                return res.status(400).json({
+                return res.status(404).json({
                     success: false,
-                    msg: `There is no status with the name ${newStatusName}`
+                    error: "Status not found",
+                    msg: "The specified status does not exist"
                 });
             }
 
@@ -173,14 +175,15 @@ exports.changeStatus = async (req, res) => {
 
             res.status(200).json({
                 success: true,
-                msg: 'Reservation status successfully updated.',
+                msg: "Payment was updated successfully",
+                data: updatedPayment
             });
         }
         else {
             return res.status(403).json({
                 success: false,
                 error: "Forbidden",
-                msg: "You don’t have permission to alter this payment status.",
+                msg: "You don’t have permission to access this route. You need to be the owner or the guest of the property",
             });
         }
 
@@ -190,7 +193,7 @@ exports.changeStatus = async (req, res) => {
         } else {
             res.status(500).json({
                 success: false,
-                msg: err.message || "Some error occurred while updating the status."
+                msg: err.message || "An unexpected error occurred. Please try again later"
             });
         }
     }

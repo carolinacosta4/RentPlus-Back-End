@@ -59,7 +59,8 @@ exports.findAllFromSpecificUser = async (req, res, next) => {
         } catch (err) {
             res.status(500).json({
                 success: false,
-                msg: err.message || 'Some error occurred while retrieving the reservations.'
+                error: "Server Error",
+                msg: err.message || "An unexpected error occurred. Please try again later"
             });
         }
         next()
@@ -92,8 +93,19 @@ exports.bodyValidator = async (req, res, next) => {
 
     const receiverUser = await db.user.findOne({ where: { username: req.body.receiver_username } });
     if (!receiverUser) {
+        return res.status(404).json({
+            success: false,
+            error: "Receiver user not found",
+            msg: "The specified receiver does not exist"
+        });
+    }
+    if (req.loggedUserRole == 'owner' || receiverUser.user_role == 'owner') {
+        next()
+    } else {
         return res.status(400).json({
-            error: `The username ${req.body.receiver_username} does not exist`
+            success: false,
+            error: "Messages between not owners",
+            msg: "Messages can be sent only between owners e guests"
         });
     }
 
@@ -132,7 +144,7 @@ exports.create = async (req, res) => {
             res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
         else
             res.status(500).json({
-                success: false, msg: err.message || "Some error occurred while sending the message."
+                success: false, msg: err.message || "An unexpected error occurred. Please try again later"
             });
     };
 };
@@ -148,7 +160,8 @@ exports.deleteMessage = async (req, res) => {
             if (!msgm) {
                 return res.status(404).json({
                     success: false,
-                    msg: `Can't find any message with id ${messageID}`
+                    error: "Message Not Found",
+                    msg: "The specified message ID does not exist"
                 });
             }
 
@@ -160,7 +173,7 @@ exports.deleteMessage = async (req, res) => {
         } catch (err) {
             res.status(500).json({
                 success: false,
-                msg: err.message || 'Some error occurred while deleting the message.'
+                msg: err.message || "An unexpected error occurred. Please try again later"
             });
         }
     }
