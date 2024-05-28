@@ -21,8 +21,12 @@ router.route("/")
   .get(authController.verifyToken, userController.findAll)
   .post(userController.register);
 
+router.route('/role')
+  .patch(authController.verifyToken, userController.editRole)
+
 router.route("/:idU")
   .get(authController.verifyToken, userController.findUser)
+  .get(userController.findUser)
   .patch(authController.verifyToken, userController.editProfile)
   .delete(authController.verifyToken, userController.delete);
 
@@ -38,8 +42,9 @@ router.route("/login")
 router.route("/reset-password-email")
   .post(userController.recoverEmail);
 
-router.route('/role')
-  .post(authController.verifyToken, userController.editRole)
+router.route("/:idU/reviews")
+  // .get(authController.verifyToken, userController.findUser)
+  .get(userController.findOwnerReviews)
 
 router.all("*", function (req, res) {
   //send an predefined error message

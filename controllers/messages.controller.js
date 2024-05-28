@@ -96,6 +96,14 @@ exports.bodyValidator = async (req, res, next) => {
             error: `The username ${req.body.receiver_username} does not exist`
         });
     }
+
+    if(req.loggedUserId == req.body.receiver_username){
+        return res.status(400).json({
+            success: false,
+            msg: `Receiver can't be the same as Sender`
+        });
+    }
+
     next()
 };
 

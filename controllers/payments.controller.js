@@ -143,7 +143,7 @@ exports.changeStatus = async (req, res) => {
 
         console.log("USERNAME: " + reservation.username);
 
-        if (req.loggedUserId == reservation.username || req.loggedUserId == property.owner_username || req.loggedUserRole != "admin") {
+        if (req.loggedUserId == reservation.username || req.loggedUserId == property.owner_username || req.loggedUserRole == "admin") {
             const payment = await Payment.findOne({ where: { reservation_ID: reservationId } });
 
             if (!reservation) {
@@ -171,20 +171,9 @@ exports.changeStatus = async (req, res) => {
             payment.status_payment = status.ID;
             await payment.save();
 
-            const updatedPayment = await Payment.findByPk(reservationId, {
-                include: [
-                    {
-                        model: db.status_payment,
-                        as: 'status',
-                        attributes: ['status_name']
-                    }
-                ]
-            });
-
             res.status(200).json({
                 success: true,
                 msg: 'Reservation status successfully updated.',
-                data: updatedPayment
             });
         }
         else {

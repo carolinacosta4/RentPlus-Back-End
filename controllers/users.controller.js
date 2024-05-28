@@ -6,6 +6,8 @@ const db = require("../models/index.js");
 const User = db.user;
 const Favorite = db.favorites
 const Property = db.property
+const Review = db.review;
+const Reservation = db.reservation
 
 const { Op, ValidationError, Sequelize } = require("sequelize");
 
@@ -46,13 +48,10 @@ exports.findAll = async (req, res) => {
       ];
     });
 
-    const pages = limitValue == users.length ? users.length / limitValue : 1
-
     res.status(200).json({
       success: true,
       pagination: [{
         "total": `${users.length}`,
-        "pages": `${pages}`,
         "current": `${pageNumber}`,
         "limit": `${limitValue}`
       }],
@@ -131,12 +130,12 @@ exports.findUser = async (req, res) => {
   let { field } = req.query;
 
   try {
-    if (req.loggedUserRole !== "admin" & req.loggedUserId != req.params.idU) {
-      return res.status(403).json({
-        success: false,
-        msg: "You don't have permission to access this route."
-      });
-    }
+    // if (req.loggedUserRole !== "admin" & req.loggedUserId != req.params.idU) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     msg: "You don't have permission to access this route."
+    //   });
+    // }
 
     let userFound = await User.findByPk(req.params.idU)
 
@@ -170,7 +169,7 @@ exports.findUser = async (req, res) => {
             }
           ]
         });
-      } else if (field == 'properties' & req.loggedUserRole != "owner") {
+      } else if (field == 'properties' & userFound.user_role == "owner") {
         user = await User.findByPk(req.params.idU, {
           include: [
             {
@@ -179,6 +178,18 @@ exports.findUser = async (req, res) => {
               attributes: ['title', 'ID']
             }
           ]
+        });
+      } else if (field == 'properties' & userFound.user_role != "owner") {
+        return res.status(400).json({
+          success: false,
+          error: "Bad Request",
+          msg: "This user is not an owner."
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "Bad Request",
+          msg: "Invalid field requested."
         });
       }
     } else {
@@ -295,9 +306,15 @@ exports.editProfile = async (req, res) => {
         });
       }
 
+      console.log("Updating user with data:", req.body);
+
+
       let affectedRows = await User.update(req.body, {
         where: { username: req.params.idU },
       });
+
+      console.log("Affected Rows:", affectedRows);
+
 
       if (affectedRows[0] === 0) {
         return res.status(200).json({
@@ -572,3 +589,59 @@ exports.editRole = async (req, res) => {
     }
   }
 }
+
+exports.findOwnerReviews = async (req, res) => {
+  try {
+    let userFound = await User.findByPk(req.params.idU)
+    if (!userFound) {
+      return res.status(404).json({
+        success: false,
+        msg: "The specified username does not exist.",
+      });
+    }
+
+    const properties = await db.property.findAll({
+      attributes: ['ID', 'owner_username'],
+      where: { owner_username: req.params.idU },
+      raw: true
+    });
+    const propertiesFound = properties.map(property => property.ID);
+
+    const reservations = await db.reservation.findAll({
+      attributes: ['property_ID', 'ID'],
+      where: { property_ID: propertiesFound },
+      raw: true
+    });
+    const reservationsFound = reservations.map(reservation => reservation.ID);
+
+    const reviews = await db.review.findAll({
+      attributes: ['rating'],
+      where: { reservation_ID: reservationsFound },
+      raw: true
+    });
+
+    if (reviews.length > 0) {
+      return res.json({
+        success: true,
+        data: reviews,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        msg: "No review found."
+      });
+    }
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
+  }
+};

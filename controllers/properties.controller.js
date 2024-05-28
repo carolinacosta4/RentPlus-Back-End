@@ -53,8 +53,6 @@ exports.findAll = async (req, res) => {
     });
 
     if (properties.length > 0) {
-      const totalPages = properties.length / limitValue;
-
       properties.forEach((property) => {
         property.links = [
           { rel: "self", href: `/properties/${properties.ID}`, method: "GET" },
@@ -67,7 +65,6 @@ exports.findAll = async (req, res) => {
         success: true,
         pagination: [{
           "total": properties.length,
-          "pages": totalPages,
           "current": pageNumber,
           "limit": limitValue
         }],
@@ -233,6 +230,7 @@ exports.createProperty = async (req, res) => {
 
 // Allows user to edit their property.
 exports.editProperty = async (req, res) => {
+  let affectedRows
   try {
     let property = await Property.findByPk(req.params.idP);
     if (property === null) {
@@ -248,14 +246,14 @@ exports.editProperty = async (req, res) => {
           success: false,
           msg: "At least one field must be provided to update.",
         });
-      } else if (!req.body.title & !req.body.description & !req.body.location & !req.body.map_url & !req.body.daily_price & !req.body.guest_number & !req.body.bathrooms & !req.body.bedrooms & !req.body.beds & !req.body.photos) {
+      } else if (!req.body.title & !req.body.description & !req.body.location & !req.body.map_url & !req.body.daily_price & !req.body.guest_number & !req.body.bathrooms & !req.body.bedrooms & !req.body.beds & !req.body.photos & !req.body.amenities) {
         return res.status(400).json({
           success: false,
           msg: "You can only edit the title, description, location, URL of the map, daily price, number of guests, number of bathrooms, number of bedrooms, number of beds, amenities or photos.",
         });
       }
 
-      let affectedRows = await Property.update(req.body, {
+      affectedRows = await Property.update(req.body, {
         where: { ID: req.params.idP },
       });
 
@@ -267,10 +265,12 @@ exports.editProperty = async (req, res) => {
             photo: photo
           });
         }
+        affectedRows = 1
       }
 
       if (req.body.amenities) {
         await property.setAmenities(req.body.amenities);
+        affectedRows = 1
       }
 
       if (affectedRows[0] === 0) {
@@ -336,7 +336,7 @@ exports.deleteProperty = async (req, res) => {
           success: true,
           msg: `Property deleted successfully.`,
         });
-      }else{
+      } else {
         return res.status(403).json({
           success: false,
           error: "Forbidden",
@@ -369,6 +369,12 @@ exports.deleteProperty = async (req, res) => {
 
 // Obtains all reviews about specified property.
 exports.findReviews = async (req, res) => {
+  let { page, limit } = req.query;
+
+  const pageNumber = page && Number.parseInt(page) > 0 ? Number.parseInt(page) : 1;
+  const limitValue = limit && Number.parseInt(limit) > 0 ? Number.parseInt(limit) : 10;
+  const offset = (pageNumber - 1) * limitValue;
+
   try {
     const reservations = await db.reservation.findAll({
       attributes: ['property_ID', 'ID'],
@@ -381,28 +387,47 @@ exports.findReviews = async (req, res) => {
     const reviews = await db.review.findAll({
       attributes: ['username', 'rating', 'comment', 'reservation_ID'],
       where: { reservation_ID: reservationsFound },
+      limit: limitValue, offset: offset,
       raw: true
     });
 
-    let property = await Property.findByPk(req.params.idP);
-    if (property === null) {
-      return res.status(404).json({
+    if (reviews.length > 0) {
+      const reviewsNotFiltered = await db.review.findAll({
+        where: { reservation_ID: reservationsFound },
+        raw: true
+      });
+
+
+      let property = await Property.findByPk(req.params.idP);
+      if (property === null) {
+        return res.status(404).json({
+          success: false,
+          data: `Cannot find any property with ID ${req.params.idP}`,
+        });
+      }
+
+      return res.json({
+        success: true,
+        pagination: [{
+          "total": reviews.length,
+          "current": pageNumber,
+          "limit": limitValue
+        }],
+        data: reviews,
+        links: [
+          {
+            rel: "create",
+            href: `/property/${property.ID}/createReview`,
+            method: "POST",
+          },
+        ],
+      });
+    } else {
+      res.status(404).json({
         success: false,
-        data: `Cannot find any property with ID ${req.params.idP}`,
+        msg: "No review found."
       });
     }
-
-    return res.json({
-      success: true,
-      data: reviews,
-      links: [
-        {
-          rel: "create",
-          href: `/property/${property.ID}/createReview`,
-          method: "POST",
-        },
-      ],
-    });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
       res.status(503).json({
@@ -432,7 +457,8 @@ exports.createReview = async (req, res) => {
     let reservation = await Reservation.findOne({
       where: {
         property_ID: req.params.idP,
-        username: req.loggedUserId
+        username: req.loggedUserId, 
+        ID: req.body.reservation_ID
       }
     });
 
@@ -443,16 +469,25 @@ exports.createReview = async (req, res) => {
       });
     }
 
-    if (!req.body.comment || !req.body.rating) {
+    if (!req.body.comment || !req.body.rating || !req.body.reservation_ID) {
       return res.status(400).json({
         success: false,
-        msg: "Comment and rating are required."
+        msg: "Comment, reservation_ID and rating are required."
+      });
+    }
+
+    let review = await Review.findOne({ where: { reservation_ID: req.body.reservation_ID } })
+
+    if (review) {
+      return res.status(400).json({
+        success: false,
+        msg: "You already added a review to this reservation.",
       });
     }
 
     await Review.create({
       username: req.loggedUserId, rating: req.body.rating,
-      comment: req.body.comment, reservation_ID: reservation.ID
+      comment: req.body.comment, reservation_ID: req.body.reservation_ID
     });
 
     return res.json({
