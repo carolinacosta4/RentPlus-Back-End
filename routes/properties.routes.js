@@ -15,17 +15,16 @@ router.route("/")
   .get(propertyController.findAll)
   .post(authController.verifyToken, propertyController.createProperty);
 
-router.route("/:idT")
+router.route("/:idP")
   .get(propertyController.findProperty)
-  .put(propertyController.update)
+  .patch(authController.verifyToken, propertyController.editProperty)
   .delete(authController.verifyToken, propertyController.deleteProperty);
 
-router.route("/:idT/reviews")
+router.route("/:idP/reviews")
   .get(propertyController.findReviews)
   .post(authController.verifyToken, propertyController.createReview);
 
-router.route("/:idT/reviews/:idR")
-  .put(propertyController.updateReview)
+router.route("/:idP/reviews/:idR")
   .delete(authController.verifyToken, propertyController.deleteReview);
 
 

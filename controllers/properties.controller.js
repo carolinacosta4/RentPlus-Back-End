@@ -3,8 +3,9 @@ const db = require("../models/index.js");
 const Property = db.property;
 const Review = db.review;
 const Reservation = db.reservation
+const Photo = db.photos_property
 
-const { Op, ValidationError, Sequelize } = require("sequelize");
+const { Op, ValidationError, Sequelize, where } = require("sequelize");
 
 // Obtains general information about all properties. Can be filtered by properties type.
 exports.findAll = async (req, res) => {
@@ -23,7 +24,7 @@ exports.findAll = async (req, res) => {
 
       const types = propertyTypes.map(type => type.type_name.toLowerCase());
 
-      if (type & !types.includes(type.toLowerCase())) {
+      if (type && !types.includes(type.toLowerCase())) {
         return res.status(400).json({
           success: false,
           error: "Invalid type values",
@@ -48,17 +49,10 @@ exports.findAll = async (req, res) => {
           as: 'photos',
           attributes: ['photo']
         },
-        // {
-        //   model: db.amenity,
-        //   as: 'amenities',
-        //   attributes: ['amenity_name']
-        // },
       ]
     });
 
     if (properties.length > 0) {
-      const totalPages = properties.length / limitValue;
-
       properties.forEach((property) => {
         property.links = [
           { rel: "self", href: `/properties/${properties.ID}`, method: "GET" },
@@ -71,7 +65,6 @@ exports.findAll = async (req, res) => {
         success: true,
         pagination: [{
           "total": properties.length,
-          "pages": totalPages,
           "current": pageNumber,
           "limit": limitValue
         }],
@@ -103,7 +96,7 @@ exports.findAll = async (req, res) => {
 // Obtains information about specified property.
 exports.findProperty = async (req, res) => {
   try {
-    let property = await Property.findByPk(req.params.idT, {
+    let property = await Property.findByPk(req.params.idP, {
       include: [
         {
           model: db.property_type,
@@ -184,6 +177,19 @@ exports.createProperty = async (req, res) => {
         beds: req.body.beds
       });
 
+      if (req.body.photos && req.body.photos.length > 0) {
+        for (let photo of req.body.photos) {
+          await Photo.create({
+            property_ID: newProperty.ID,
+            photo: photo
+          })
+        }
+      }
+
+      if (req.body.amenities && req.body.amenities.length > 0) {
+        await newProperty.addAmenities(req.body.amenities)
+      }
+
       res.status(201).json({
         success: true,
         msg: "Property created successfully.",
@@ -222,12 +228,70 @@ exports.createProperty = async (req, res) => {
   }
 };
 
-exports.update = async (req, res) => {
+// Allows user to edit their property.
+exports.editProperty = async (req, res) => {
+  let affectedRows
   try {
-    // Logic to update a property
-    res
-      .status(200)
-      .json({ success: true, message: "Property updated successfully" });
+    let property = await Property.findByPk(req.params.idP);
+    if (property === null) {
+      return res.status(404).json({
+        success: false,
+        msg: "The specified property ID does not exist",
+      });
+    }
+
+    if (req.loggedUserId == property.owner_username) {
+      if (!req.body || Object.keys(req.body).length == 0) {
+        return res.status(400).json({
+          success: false,
+          msg: "At least one field must be provided to update.",
+        });
+      } else if (!req.body.title & !req.body.description & !req.body.location & !req.body.map_url & !req.body.daily_price & !req.body.guest_number & !req.body.bathrooms & !req.body.bedrooms & !req.body.beds & !req.body.photos & !req.body.amenities) {
+        return res.status(400).json({
+          success: false,
+          msg: "You can only edit the title, description, location, URL of the map, daily price, number of guests, number of bathrooms, number of bedrooms, number of beds, amenities or photos.",
+        });
+      }
+
+      affectedRows = await Property.update(req.body, {
+        where: { ID: req.params.idP },
+      });
+
+      if (req.body.photos) {
+        await Photo.destroy({ where: { property_ID: req.params.idP } });
+        for (let photo of req.body.photos) {
+          await Photo.create({
+            property_ID: req.params.idP,
+            photo: photo
+          });
+        }
+        affectedRows = 1
+      }
+
+      if (req.body.amenities) {
+        await property.setAmenities(req.body.amenities);
+        affectedRows = 1
+      }
+
+      if (affectedRows[0] === 0) {
+        return res.status(200).json({
+          success: true,
+          msg: `No updates were made on property with ID ${req.params.idP}.`,
+        });
+      }
+
+      return res.json({
+        success: true,
+        msg: `Property with ID ${req.params.idP} was updated successfully.`,
+      });
+
+    }
+
+    return res.status(403).json({
+      success: false,
+      error: "Forbidden",
+      msg: "You don't have permission to access this route. You need to be the user who owns the property.",
+    });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
       res.status(503).json({
@@ -246,26 +310,44 @@ exports.update = async (req, res) => {
 // Handles deletion of a property the user owns (authentication token must be provided in header).
 exports.deleteProperty = async (req, res) => {
   try {
-    let property = await Property.findOne({ where: { ID: req.params.idT } });
+    let property = await Property.findOne({ where: { ID: req.params.idP } });
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        error: "Property not found",
+        msg: `The specified property ID does not exist.`,
+      });
+    }
+
+    let dates = 0
+    const currentDate = new Date();
+    let reservationProperty = await Reservation.findAll({ where: { property_ID: req.params.idP } })
+    reservationProperty.forEach((resProp) => {
+      const dateIn = new Date(resProp.dateIn);
+      if (dateIn > currentDate) {
+        dates += 1
+      }
+    });
+
     if (req.loggedUserId == property.owner_username || req.loggedUserRole == 'admin') {
-      let deleteProperty = await Property.destroy({ where: { ID: req.params.idT } });
-      if (deleteProperty == 1) {
+      if (dates == 0) {
+        await Property.destroy({ where: { ID: req.params.idP } });
         return res.json({
           success: true,
           msg: `Property deleted successfully.`,
         });
       } else {
-        return res.status(404).json({
+        return res.status(403).json({
           success: false,
-          error: "Property not found",
-          msg: `The specified property ID does not exist.`,
+          error: "Forbidden",
+          msg: "You have reservations arranged wait for them to end to delete the building.",
         });
       }
     } else {
       return res.status(403).json({
         success: false,
         error: "Forbidden",
-        msg: "You don’t have permission to access this route. You need to be the user who owns the property.",
+        msg: "You don't have permission to access this route. You need to be the user who owns the property.",
       });
     }
   } catch (error) {
@@ -287,10 +369,16 @@ exports.deleteProperty = async (req, res) => {
 
 // Obtains all reviews about specified property.
 exports.findReviews = async (req, res) => {
+  let { page, limit } = req.query;
+
+  const pageNumber = page && Number.parseInt(page) > 0 ? Number.parseInt(page) : 1;
+  const limitValue = limit && Number.parseInt(limit) > 0 ? Number.parseInt(limit) : 10;
+  const offset = (pageNumber - 1) * limitValue;
+
   try {
     const reservations = await db.reservation.findAll({
       attributes: ['property_ID', 'ID'],
-      where: { property_ID: req.params.idT },
+      where: { property_ID: req.params.idP },
       raw: true
     });
 
@@ -299,28 +387,47 @@ exports.findReviews = async (req, res) => {
     const reviews = await db.review.findAll({
       attributes: ['username', 'rating', 'comment', 'reservation_ID'],
       where: { reservation_ID: reservationsFound },
+      limit: limitValue, offset: offset,
       raw: true
     });
 
-    let property = await Property.findByPk(req.params.idT);
-    if (property === null) {
-      return res.status(404).json({
+    if (reviews.length > 0) {
+      const reviewsNotFiltered = await db.review.findAll({
+        where: { reservation_ID: reservationsFound },
+        raw: true
+      });
+
+
+      let property = await Property.findByPk(req.params.idP);
+      if (property === null) {
+        return res.status(404).json({
+          success: false,
+          data: `Cannot find any property with ID ${req.params.idP}`,
+        });
+      }
+
+      return res.json({
+        success: true,
+        pagination: [{
+          "total": reviews.length,
+          "current": pageNumber,
+          "limit": limitValue
+        }],
+        data: reviews,
+        links: [
+          {
+            rel: "create",
+            href: `/property/${property.ID}/createReview`,
+            method: "POST",
+          },
+        ],
+      });
+    } else {
+      res.status(404).json({
         success: false,
-        data: `Cannot find any property with ID ${req.params.idT}`,
+        msg: "No review found."
       });
     }
-
-    return res.json({
-      success: true,
-      data: reviews,
-      links: [
-        {
-          rel: "create",
-          href: `/property/${property.ID}/createReview`,
-          method: "POST",
-        },
-      ],
-    });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
       res.status(503).json({
@@ -339,18 +446,19 @@ exports.findReviews = async (req, res) => {
 // Allows a user to create a review for a specified property.
 exports.createReview = async (req, res) => {
   try {
-    let property = await Property.findByPk(req.params.idT);
+    let property = await Property.findByPk(req.params.idP);
     if (!property) {
       return res.status(404).json({
         success: false,
-        data: `Cannot find any property with ID ${req.params.idT}`,
+        data: `Cannot find any property with ID ${req.params.idP}`,
       });
     }
 
     let reservation = await Reservation.findOne({
       where: {
-        property_ID: req.params.idT,
-        username: req.loggedUserId
+        property_ID: req.params.idP,
+        username: req.loggedUserId, 
+        ID: req.body.reservation_ID
       }
     });
 
@@ -361,9 +469,26 @@ exports.createReview = async (req, res) => {
       });
     }
 
-    await Review.create({ 
-      username: req.loggedUserId, rating: req.body.rating, 
-      comment: req.body.comment, reservation_ID: reservation.ID});
+    if (!req.body.comment || !req.body.rating || !req.body.reservation_ID) {
+      return res.status(400).json({
+        success: false,
+        msg: "Comment, reservation_ID and rating are required."
+      });
+    }
+
+    let review = await Review.findOne({ where: { reservation_ID: req.body.reservation_ID } })
+
+    if (review) {
+      return res.status(400).json({
+        success: false,
+        msg: "You already added a review to this reservation.",
+      });
+    }
+
+    await Review.create({
+      username: req.loggedUserId, rating: req.body.rating,
+      comment: req.body.comment, reservation_ID: req.body.reservation_ID
+    });
 
     return res.json({
       success: true,
@@ -371,12 +496,12 @@ exports.createReview = async (req, res) => {
       links: [
         {
           rel: "get",
-          href: `/properties/${req.params.idT}/reviews`,
+          href: `/properties/${req.params.idP}/reviews`,
           method: "GET",
         },
         {
           rel: "delete",
-          href: `/properties/${req.params.idT}/reviews`,
+          href: `/properties/${req.params.idP}/reviews`,
           method: "DELETE",
         },
       ],
@@ -396,42 +521,24 @@ exports.createReview = async (req, res) => {
   }
 };
 
-exports.updateReview = async (req, res) => {
-  try {
-    // Logic to update a amenity
-    res
-      .status(200)
-      .json({ success: true, message: "Review updated successfully" });
-  } catch (error) {
-    if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
-        error: "Database Error",
-        msg: "There was an issue connecting to the database. Please try again later"
-      });
-    } else {
-      if (error instanceof Sequelize.ConnectionError) {
-        res.status(503).json({
-          error: "Database Error",
-          msg: "There was an issue connecting to the database. Please try again later"
-        });
-      } else {
-        res.status(500).json({
-          error: "Server Error",
-          msg: "An unexpected error occurred. Please try again later."
-        });
-      }
-    }
-  }
-};
-
 // Handles deletion of a sent review (authentication token must be provided in header).
 exports.deleteReview = async (req, res) => {
   try {
     const reservations = await db.reservation.findAll({
       attributes: ['property_ID', 'ID'],
-      where: { property_ID: req.params.idT },
+      where: { property_ID: req.params.idP },
       raw: true
     });
+
+    let property = await Property.findOne({ where: { ID: req.params.idP } })
+
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        error: "Property not found",
+        msg: "The specified Property ID does not exist."
+      });
+    }
 
     const reservationsFound = reservations.map(reservation => reservation.ID);
 

@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
           key: "ID",
         },
         primaryKey: true,
+        // onDelete: 'CASCADE',
       },
     },
     {
@@ -34,12 +35,14 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "username", // username is the FK in the favorites
       targetKey: "username", // username is the PK in the user
       as: "user",
+      onDelete: 'CASCADE',
     });
 
     favorites.belongsTo(models.property, {
       foreignKey: "ID", // username is the FK in the favorites
       targetKey: "ID", // username is the PK in the user
       as: "userFavorites",
+      // onDelete: 'CASCADE',
     });
   };
 

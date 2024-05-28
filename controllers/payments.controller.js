@@ -173,16 +173,6 @@ exports.changeStatus = async (req, res) => {
             payment.status_payment = status.ID;
             await payment.save();
 
-            const updatedPayment = await Payment.findByPk(reservationId, {
-                include: [
-                    {
-                        model: db.status_payment,
-                        as: 'status',
-                        attributes: ['status_name']
-                    }
-                ]
-            });
-
             res.status(200).json({
                 success: true,
                 msg: "Payment was updated successfully",
