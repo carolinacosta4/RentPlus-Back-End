@@ -5,6 +5,9 @@ const config = require("../config/db.config.js");
 const db = require("../models/index.js");
 const User = db.user;
 const Favorite = db.favorites
+const Property = db.property
+const Review = db.review;
+const Reservation = db.reservation
 
 const { Op, ValidationError, Sequelize } = require("sequelize");
 
@@ -20,31 +23,34 @@ const multer = require('multer')
 let storage = multer.memoryStorage();
 const multerUploads = multer({ storage }).single('image');
 
-// Obtains general information about all users. Route only available for admins (authentication token must be provided in header). Has an optional limit counter.
+// Obtains general information about all users. Route only available for admins. Has an optional limit counter.
 exports.findAll = async (req, res) => {
   let { page, limit, sort } = req.query;
 
   const pageNumber = page && Number.parseInt(page) > 0 ? Number.parseInt(page) : 1;
   const limitValue = limit && Number.parseInt(limit) > 0 ? Number.parseInt(limit) : 10;
   const offset = (pageNumber - 1) * limitValue;
-
-  if (sort) {
-    if (sort.toLowerCase() != 'asc' && sort.toLowerCase() != 'desc') {
-      return res.status(400).json({
-        success: false,
-        message: "Sort can only be 'asc' or 'desc'."
-      });
-    }
-  }
+  let users
 
   try {
-    if (req.loggedUserRole !== "admin")
+    if (req.loggedUserRole !== "admin") {
       return res.status(403).json({
         success: false,
         msg: "You don't have permission to access this route."
       });
+    }
 
-    let users = await User.findAll({ limit: limitValue, offset: offset, order: [['username', sort.toUpperCase()]], raw: true });
+    if (sort) {
+      if (sort.toLowerCase() != 'asc' && sort.toLowerCase() != 'desc') {
+        return res.status(400).json({
+          success: false,
+          message: "Sort can only be 'asc' or 'desc'."
+        });
+      }
+      users = await User.findAll({ limit: limitValue, offset: offset, order: [['username', sort.toUpperCase()]], raw: true });
+    } else {
+      users = await User.findAll({ limit: limitValue, offset: offset, raw: true });
+    }
 
     users.forEach((user) => {
       user.links = [
@@ -54,13 +60,10 @@ exports.findAll = async (req, res) => {
       ];
     });
 
-    const pages = limitValue == users.length ? users.length / limitValue : 1
-
     res.status(200).json({
       success: true,
       pagination: [{
         "total": `${users.length}`,
-        "pages": `${pages}`,
         "current": `${pageNumber}`,
         "limit": `${limitValue}`
       }],
@@ -85,8 +88,10 @@ exports.findAll = async (req, res) => {
 // Handles user registration to join the platform
 exports.register = async (req, res) => {
   try {
-    if (!req.body && !req.body.username && !req.body.password)
-      return res.status(400).json({ success: false, msg: "Username and password are mandatory" });
+    if (!req.body || !req.body.username || !req.body.password || !req.body.email) {
+      console.log("here");
+      return res.status(400).json({ success: false, msg: "Username, email and password are mandatory" });
+    }
 
     let searchUser = await User.findOne({ where: { username: req.body.username } })
     if (searchUser) {
@@ -132,12 +137,19 @@ exports.register = async (req, res) => {
   }
 };
 
-// Obtains information about specified user. Route only available for admins (authentication token must be provided in header).
+// Obtains information about specified user. Route only available for admins.
 exports.findUser = async (req, res) => {
   let { field } = req.query;
 
   try {
-    let userFound = await User.findByPk(req.params.idT)
+    // if (req.loggedUserRole !== "admin" & req.loggedUserId != req.params.idU) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     msg: "You don't have permission to access this route."
+    //   });
+    // }
+
+    let userFound = await User.findByPk(req.params.idU)
 
     if (!userFound) {
       return res.status(404).json({
@@ -150,7 +162,7 @@ exports.findUser = async (req, res) => {
 
     if (field) {
       if (field == 'favorites') {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.favorites,
@@ -160,7 +172,7 @@ exports.findUser = async (req, res) => {
           ]
         });
       } else if (field == 'reservations') {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.reservation,
@@ -169,20 +181,32 @@ exports.findUser = async (req, res) => {
             }
           ]
         });
-      } else if (field == 'properties') {
-        user = await User.findByPk(req.params.idT, {
+      } else if (field == 'properties' & userFound.user_role == "owner") {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.property,
               as: 'properties',
-              attributes: ['title']
+              attributes: ['title', 'ID']
             }
           ]
+        });
+      } else if (field == 'properties' & userFound.user_role != "owner") {
+        return res.status(400).json({
+          success: false,
+          error: "Bad Request",
+          msg: "This user is not an owner."
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "Bad Request",
+          msg: "Invalid field requested."
         });
       }
     } else {
       if (userFound.user_role == 'owner') {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.favorites,
@@ -207,7 +231,7 @@ exports.findUser = async (req, res) => {
           ]
         });
       } else {
-        user = await User.findByPk(req.params.idT, {
+        user = await User.findByPk(req.params.idU, {
           include: [
             {
               model: db.favorites,
@@ -270,30 +294,56 @@ exports.findUser = async (req, res) => {
   }
 };
 
-
-exports.update = async (req, res) => {
+// Handles user profile editing.
+exports.editProfile = async (req, res) => {
   try {
-    let user = await User.findByPk(req.params.idT);
+    let user = await User.findByPk(req.params.idU);
     if (user === null) {
       return res.status(404).json({
         success: false,
-        data: `Cannot find any user with username ${req.params.idT}`,
+        msg: `Cannot find any user with username ${req.params.idU}`,
       });
     }
 
-    let affectedRows = await User.update(req.body, {
-      where: { username: req.params.idT },
-    });
-    if (affectedRows[0] === 0) {
-      return res.status(200).json({
+    if (req.loggedUserId == req.params.idU) {
+      if (!req.body || Object.keys(req.body).length == 0) {
+        return res.status(400).json({
+          success: false,
+          msg: "At least one field must be provided to update.",
+        });
+      } else if (!req.body.first_name & !req.body.last_name & !req.body.username & !req.body.phone_number) {
+        return res.status(400).json({
+          success: false,
+          msg: "You can only edit your first name, last name, username or phone number.",
+        });
+      }
+
+      console.log("Updating user with data:", req.body);
+
+
+      let affectedRows = await User.update(req.body, {
+        where: { username: req.params.idU },
+      });
+
+      console.log("Affected Rows:", affectedRows);
+
+
+      if (affectedRows[0] === 0) {
+        return res.status(200).json({
+          success: true,
+          msg: `No updates were made on user with username ${req.params.idU}.`,
+        });
+      }
+
+      return res.json({
         success: true,
-        msg: `No updates were made on user with username ${req.params.idT}.`,
+        msg: `User with username ${req.params.idU} was updated successfully.`,
       });
     }
 
-    return res.json({
-      success: true,
-      msg: `User with username ${req.params.idT} was updated successfully.`,
+    return res.status(403).json({
+      success: false,
+      msg: "You are not authorized to edit other users.",
     });
   } catch (error) {
     if (error instanceof ValidationError) {
@@ -309,7 +359,7 @@ exports.update = async (req, res) => {
     } else {
       res.status(500).json({
         success: false,
-        msg: `Error updating user with username ${req.params.idT}.`,
+        msg: `Error updating user with username ${req.params.idU}.`,
       });
     }
   }
@@ -319,7 +369,7 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
   try {
     if (req.loggedUserRole === "admin") {
-      let result = await User.destroy({ where: { username: req.params.idT } });
+      let result = await User.destroy({ where: { username: req.params.idU } });
       if (result == 1) {
         return res.json({
           success: true,
@@ -332,8 +382,9 @@ exports.delete = async (req, res) => {
         msg: `The specified username does not exist.`,
       });
     } else {
-      if (req.loggedUserId == req.params.idT) {
-        let result = await User.destroy({ where: { username: req.params.idT } });
+      if (req.loggedUserId == req.params.idU) {
+        console.log(req.loggedUserId, req.params.idU);
+        let result = await User.destroy({ where: { username: req.params.idU } });
         if (result == 1) {
           return res.json({
             success: true,
@@ -361,6 +412,7 @@ exports.delete = async (req, res) => {
     } else {
       res.status(500).json({
         error: "Server Error",
+        error2: error,
         msg: "An unexpected error occurred. Please try again later."
       });
     }
@@ -380,7 +432,7 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ id: user.username, role: user.user_role },
       config.SECRET, {
-      expiresIn: '24h' // 24 hours
+      expiresIn: '24h'
     });
 
     return res.status(200).json({ success: true, accessToken: token });
@@ -424,14 +476,23 @@ exports.recoverEmail = async (req, res) => {
 // Handle user adding favorites on POST
 exports.addFavorite = async (req, res) => {
   try {
-    if (!req.body.property_ID)
+    if (!req.body.property_ID) {
       return res.status(400).json({
         success: false,
         msg: "Property ID is mandatory"
       });
+    }
+
+    let property = await Property.findOne({ where: { ID: req.body.property_ID } })
+    if (!property) {
+      return res.status(404).json({
+        success: false,
+        msg: "The specified properties ID does not exist."
+      });
+    }
 
     await Favorite.create({
-      username: req.params.idT,
+      username: req.params.idU,
       property_ID: req.body.property_ID,
     });
 
@@ -439,7 +500,7 @@ exports.addFavorite = async (req, res) => {
       success: true,
       msg: "Property added to favorites.",
       links: [
-        { rel: "self", href: `/users/${req.params.idT}?field=favorites`, method: "GET" }
+        { rel: "self", href: `/users/${req.params.idU}?field=favorites`, method: "GET" }
       ],
     });
 
@@ -461,6 +522,14 @@ exports.addFavorite = async (req, res) => {
 // Removes specified property from favorites 
 exports.removeFavorite = async (req, res) => {
   try {
+    let user = await User.findOne({ where: { username: req.params.idU } })
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        msg: "The specified username does not exist."
+      });
+    }
+
     let result = await Favorite.destroy({ where: { property_ID: req.params.idP } });
     if (result == 1) {
       return res.json({
@@ -473,6 +542,107 @@ exports.removeFavorite = async (req, res) => {
       success: false,
       msg: `The specified property isn't favorited.`,
     });
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
+  }
+};
+
+// Handles updating user role.
+exports.editRole = async (req, res) => {
+  try {
+    if (!req.body.user_role) {
+      return res.status(400).json({
+        success: false,
+        msg: "The new role must be provided to update.",
+      });
+    }
+
+    let affectedRows = await User.update(req.body, {
+      where: { username: req.loggedUserId },
+    });
+
+    if (affectedRows[0] === 0) {
+      return res.status(200).json({
+        success: true,
+        msg: `No updates were made on user with username ${req.loggedUserId}.`,
+      });
+    }
+
+    return res.json({
+      success: true,
+      msg: `User with username ${req.loggedUserId} was updated successfully.`,
+    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        msg: error.errors.map((e) => e.message)
+      });
+    } else if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        msg: `Error updating user with username ${req.params.idU}.`,
+      });
+    }
+  }
+}
+
+exports.findOwnerReviews = async (req, res) => {
+  try {
+    let userFound = await User.findByPk(req.params.idU)
+    if (!userFound) {
+      return res.status(404).json({
+        success: false,
+        msg: "The specified username does not exist.",
+      });
+    }
+
+    const properties = await db.property.findAll({
+      attributes: ['ID', 'owner_username'],
+      where: { owner_username: req.params.idU },
+      raw: true
+    });
+    const propertiesFound = properties.map(property => property.ID);
+
+    const reservations = await db.reservation.findAll({
+      attributes: ['property_ID', 'ID'],
+      where: { property_ID: propertiesFound },
+      raw: true
+    });
+    const reservationsFound = reservations.map(reservation => reservation.ID);
+
+    const reviews = await db.review.findAll({
+      attributes: ['rating'],
+      where: { reservation_ID: reservationsFound },
+      raw: true
+    });
+
+    if (reviews.length > 0) {
+      return res.json({
+        success: true,
+        data: reviews,
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        msg: "No review found."
+      });
+    }
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
       res.status(503).json({

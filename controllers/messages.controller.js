@@ -109,7 +109,14 @@ exports.bodyValidator = async (req, res, next) => {
         });
     }
 
-    
+    if(req.loggedUserId == req.body.receiver_username){
+        return res.status(400).json({
+            success: false,
+            msg: `Receiver can't be the same as Sender`
+        });
+    }
+
+    next()
 };
 
 // Handles sending messages to another user (authentication token must be provided in header).

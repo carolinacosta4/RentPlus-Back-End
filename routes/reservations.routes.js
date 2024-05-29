@@ -6,8 +6,8 @@ const authController = require("../controllers/auth.controller");
 
 router.use((req, res, next) => {
     const start = Date.now();
-    res.on("finish", () => { 
-        const diffSeconds = (Date.now() - start) / 1000; 
+    res.on("finish", () => {
+        const diffSeconds = (Date.now() - start) / 1000;
         console.log(`${req.method} ${req.originalUrl} completed in ${diffSeconds} seconds`);
     });
     next()
