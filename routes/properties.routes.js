@@ -9,23 +9,26 @@ router.use((req, res, next) => {
 });
 
 // ROTAS
-router.route("/")
+router
+  .route("/")
   .get(propertyController.findAll)
   .post(propertyController.createProperty);
 
-router.route("/:idT")
+router
+  .route("/:idT")
   .get(propertyController.findProperty)
   .put(propertyController.update)
   .delete(propertyController.deleteProperty);
 
-router.route("/:idT/reviews")
+router
+  .route("/:idT/reviews")
   .get(propertyController.findReviews)
   .post(propertyController.createReview);
 
-router.route("/:idT/reviews/:idR")
+router
+  .route("/:idT/reviews/:idR")
   .put(propertyController.updateReview)
   .delete(propertyController.deleteReview);
-
 
 // Define a catch-all route for unrecognized requests
 router.all("*", (req, res) => {
