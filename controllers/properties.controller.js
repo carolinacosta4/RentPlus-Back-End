@@ -168,13 +168,15 @@ exports.findProperty = async (req, res) => {
 exports.createProperty = async (req, res) => {
   try {
     if (req.loggedUserRole == 'owner') {
+      const createdAt = new Date();
+
       let newProperty = await Property.create({
         owner_username: req.loggedUserId, property_type: req.body.property_type,
         title: req.body.title, description: req.body.description,
         location: req.body.location, map_url: req.body.map_url,
         daily_price: req.body.daily_price, guest_number: req.body.guest_number,
         bathrooms: req.body.bathrooms, bedrooms: req.body.bedrooms,
-        beds: req.body.beds
+        beds: req.body.beds, created_at: createdAt,
       });
 
       if (req.body.photos && req.body.photos.length > 0) {

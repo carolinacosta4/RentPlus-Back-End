@@ -115,8 +115,6 @@ exports.bodyValidator = async (req, res, next) => {
             msg: `Receiver can't be the same as Sender`
         });
     }
-
-    next()
 };
 
 // Handles sending messages to another user (authentication token must be provided in header).
