@@ -18,7 +18,8 @@ router.use((req, res, next) => {
 });
 
 router.route("/")
-  .get(authController.verifyToken, userController.findAll)
+  // .get(authController.verifyToken, userController.findAll)
+  .get(userController.findAll)
   .post(userController.register);
 
 router.route('/role')
@@ -28,7 +29,8 @@ router.route("/:idU")
   // .get(authController.verifyToken, userController.findUser)
   .get(userController.findUser)
   .patch(authController.verifyToken, userController.editProfile)
-  .delete(authController.verifyToken, userController.delete);
+  .delete(userController.delete);
+// .delete(authController.verifyToken, userController.delete);
 
 router.route("/:idU/favorites")
   .post(authController.verifyToken, userController.addFavorite);
@@ -38,6 +40,9 @@ router.route("/:idU/favorites/:idP")
 
 router.route("/login")
   .post(userController.login);
+
+router.route("/block/:idU")
+  .patch(userController.editBlock);
 
 router.route("/reset-password-email")
   .post(userController.recoverEmail);
