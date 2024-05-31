@@ -2,11 +2,12 @@ const express = require('express');
 const ReservationController = require("../controllers/reservations.controller");
 const PaymentController = require("../controllers/payments.controller");
 let router = express.Router();
+const authController = require("../controllers/auth.controller");
 
 router.use((req, res, next) => {
     const start = Date.now();
-    res.on("finish", () => { 
-        const diffSeconds = (Date.now() - start) / 1000; 
+    res.on("finish", () => {
+        const diffSeconds = (Date.now() - start) / 1000;
         console.log(`${req.method} ${req.originalUrl} completed in ${diffSeconds} seconds`);
     });
     next()
@@ -15,21 +16,22 @@ router.use((req, res, next) => {
 
 router.route('/')
     .get(ReservationController.findAll)
-    .post(ReservationController.bodyValidator, ReservationController.create)
+    .post(authController.verifyToken, ReservationController.bodyValidator, ReservationController.create)
 
+router.route('/:username/:ID')
+    .get(authController.verifyToken, ReservationController.findOne)
 
 router.route('/:ID')
-    .get(ReservationController.findOne)
-    .delete(ReservationController.deleteReservation) // AQUI depois mudar para rota com o ID do user -> reservations/idUser/idReservation
+    .delete(authController.verifyToken, ReservationController.deleteReservation)
 
 router.route('/:username')
-    .get(ReservationController.getUserReservations)
+    .get(authController.verifyToken, ReservationController.getUserReservations)
 
 router.route('/:ID/status')
-    .patch(ReservationController.changeStatus) 
+    .patch(authController.verifyToken, ReservationController.changeStatus) 
 
 router.route('/:ID/payments/status')
-    .patch(PaymentController.changeStatus) 
+    .patch(authController.verifyToken, PaymentController.changeStatus) 
 
 router.all('*', function (req, res) {
     res.status(400).json({ success: false, message: `The API does not recognize the request on ${req.method} ${req.originalUrl}` });

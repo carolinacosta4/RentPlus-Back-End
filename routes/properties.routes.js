@@ -1,5 +1,6 @@
 const express = require("express");
-const propertyController = require("../controllers/properties.controller"); // Corrected import statement
+const propertyController = require("../controllers/properties.controller");
+const authController = require("../controllers/auth.controller");
 
 const router = express.Router();
 
@@ -12,18 +13,18 @@ router.use((req, res, next) => {
 router
   .route("/")
   .get(propertyController.findAll)
-  .post(propertyController.createProperty);
+  .post(authController.verifyToken, propertyController.createProperty);
 
 router
   .route("/:idT")
   .get(propertyController.findProperty)
-  .put(propertyController.update)
-  .delete(propertyController.deleteProperty);
+  .patch(authController.verifyToken, propertyController.editProperty)
+  .delete(authController.verifyToken, propertyController.deleteProperty);
 
 router
   .route("/:idT/reviews")
   .get(propertyController.findReviews)
-  .post(propertyController.createReview);
+  .post(authController.verifyToken, propertyController.createReview);
 
 router
   .route("/:idT/reviews/:idR")

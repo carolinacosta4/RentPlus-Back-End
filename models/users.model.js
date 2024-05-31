@@ -7,17 +7,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
-        validate: { notNull: { msg: "Username is required!" } }
+        validate: { notNull: { msg: "Username is required!" }, is: { args: /^[a-zA-Z0-9_]+$/, msg: "The username contains invalid characters. Only alphanumeric characters and underscores are allowed." } }
       },
       email: {
         type: DataTypes.STRING,
         allowNull: false,
         isEmail: true,
-        validate: { notNull: { msg: "Email is required!" }, isEmail: { msg: "Email invalid!" }, }
+        unique: true,
+        validate: { notNull: { msg: "Email is required!" }, isEmail: { msg: "Email invalid!" } }
       },
       phone_number: {
         type: DataTypes.TEXT,
         allowNull: false,
+        validate: { is: { args: /^[0-9-()+]+$/, msg: "The phone number provided is not in a valid format." } }
       },
       user_role: {
         type: DataTypes.STRING,
@@ -31,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
       password: {
         type: DataTypes.STRING,
         allowNull: false,
+        trim: true,
         validate: { notNull: { msg: "Password is required!" } }
       },
       is_confirmed: {
@@ -38,9 +41,19 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
         defaultValue: false, //
       },
+      is_blocked: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false, //
+      },
       created_at: {
         type: DataTypes.DATE,
-        allowNull: true,
+        get() {
+          const rawValue = this.getDataValue('created_at');
+          return rawValue ? rawValue.toISOString().slice(0, 19).replace('T', ' ') : null;
+        },
+        allowNull: false,
+        validate: { notNull: { msg: "Date is required!" } },
       },
       first_name: {
         type: DataTypes.STRING,
@@ -68,7 +81,7 @@ module.exports = (sequelize, DataTypes) => {
 
   // ASSOCIATE
 
- user.associate = (models) => {
+  user.associate = (models) => {
     // PROPERTIES
     user.hasMany(models.property, {
       onDelete: "cascade",
@@ -115,7 +128,7 @@ module.exports = (sequelize, DataTypes) => {
       sourceKey: "username", // username is PK in user
       as: "messages_received",
     });
-  }; 
+  };
 
   return user;
 };

@@ -41,6 +41,7 @@ module.exports = (sequelize, DataTypes) => {
     property_type.hasMany(models.property, {
       foreignKey: "property_type",
       as: "properties",
+      onDelete: 'CASCADE'
     });
   };
 

@@ -27,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
     status_reservation.hasMany(models.reservation, {
       foreignKey: "status_reservation_ID", // FK in reservations
       as: "reservations",
+      onDelete: 'CASCADE'
     });
   };
 

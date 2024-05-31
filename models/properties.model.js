@@ -16,6 +16,7 @@ module.exports = (sequelize, DataTypes) => {
           model: "user",
           key: "username",
         },
+        onDelete: "cascade",
       },
       property_type: {
         type: DataTypes.INTEGER,
@@ -76,6 +77,15 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
         allowNull: false,
       },
+      created_at: {
+        type: DataTypes.DATE,
+        get() {
+          const rawValue = this.getDataValue('created_at');
+          return rawValue ? rawValue.toISOString().slice(0, 19).replace('T', ' ') : null;
+        },
+        allowNull: false,
+        validate: { notNull: { msg: "Date is required!" } },
+      },
     },
     {
       // DEFINIÇÕES
@@ -92,6 +102,7 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "owner_username",
       targetKey: "username",
       as: "owner",
+      onDelete: 'CASCADE',
     });
 
     // TYPE
@@ -105,39 +116,40 @@ module.exports = (sequelize, DataTypes) => {
     property.hasMany(models.reservation, {
       foreignKey: "property_ID",
       as: "reservations",
+      onDelete: 'CASCADE'
     });
 
     // FAVORITES
     property.hasMany(models.favorites, {
       foreignKey: "property_ID",
       as: "favorites",
+      onDelete: 'CASCADE'
     });
 
     // PHOTOS
     property.hasMany(models.photos_property, {
-      foreignKey: "ID",
+      foreignKey: "property_ID",
       targetKey: "ID",
       as: "photos",
+      onDelete: 'CASCADE'
     });
 
     // MESSAGES
-    // property.hasMany(models.message, {
-    //   onDelete: "cascade",
-    //   foreignKey: "username", // username is FK in reservation
-    //   sourceKey: "username", // username is PK in user
-    //   as: "messages",
-    // });
+    property.hasMany(models.message, {
+      onDelete: "cascade",
+      foreignKey: "property_ID", // username is FK in reservation
+      sourceKey: "ID", // username is PK in user
+      as: "messages",
+    });
 
-    // // AMENITY - TABLE WITH IDs
-    // property.associate = (models) => {
-    //   property.belongsToMany(models.amenity, {
-    //     through: "amenity_property",
-    //     foreignKey: "property_ID",
-    //     otherKey: "amenity_ID",
-    //     as: "amenities",
-    //     timestamps: false
-    //   });
-    // };
+    // AMENITY - TABLE WITH IDs
+    property.belongsToMany(models.amenity, {
+      through: "amenity_property",
+      foreignKey: "property_ID",
+      otherKey: "amenity_ID",
+      as: "amenities",
+      timestamps: false
+    });
   };
 
   return property;
