@@ -16,18 +16,18 @@ router
   .post(authController.verifyToken, propertyController.createProperty);
 
 router
-  .route("/:idT")
+  .route("/:idP")
   .get(propertyController.findProperty)
   .patch(authController.verifyToken, propertyController.editProperty)
   .delete(authController.verifyToken, propertyController.deleteProperty);
 
 router
-  .route("/:idT/reviews")
+  .route("/:idP/reviews")
   .get(propertyController.findReviews)
   .post(authController.verifyToken, propertyController.createReview);
 
 router
-  .route("/:idT/reviews/:idR")
+  .route("/:idP/reviews/:idR")
   .put(propertyController.updateReview)
   .delete(propertyController.deleteReview);
 
