@@ -11,6 +11,18 @@ const Reservation = db.reservation
 
 const { Op, ValidationError, Sequelize } = require("sequelize");
 
+const cloudinary = require("cloudinary").v2;
+// cloudinary configuration
+cloudinary.config({
+  cloud_name: config.C_CLOUD_NAME,
+  api_key: config.C_API_KEY,
+  api_secret: config.C_API_SECRET
+});
+
+const multer = require('multer')  // continuar aqui
+let storage = multer.memoryStorage();
+const multerUploads = multer({ storage }).single('inputProfilePicture');
+
 // Obtains general information about all users. Route only available for admins. Has an optional limit counter.
 exports.findAll = async (req, res) => {
   let { page, limit, sort } = req.query;
