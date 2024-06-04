@@ -41,9 +41,19 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
         defaultValue: false, //
       },
+      is_blocked: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false, //
+      },
       created_at: {
         type: DataTypes.DATE,
-        allowNull: true,
+        get() {
+          const rawValue = this.getDataValue('created_at');
+          return rawValue ? rawValue.toISOString().slice(0, 19).replace('T', ' ') : null;
+        },
+        allowNull: false,
+        validate: { notNull: { msg: "Date is required!" } },
       },
       first_name: {
         type: DataTypes.STRING,

@@ -33,12 +33,12 @@ exports.findAll = async (req, res) => {
   let users
 
   try {
-    if (req.loggedUserRole !== "admin") {
-      return res.status(403).json({
-        success: false,
-        msg: "You don't have permission to access this route."
-      });
-    }
+    // if (req.loggedUserRole !== "admin") {
+    //   return res.status(403).json({
+    //     success: false,
+    //     msg: "You don't have permission to access this route."
+    //   });
+    // }
 
     if (sort) {
       if (sort.toLowerCase() != 'asc' && sort.toLowerCase() != 'desc') {
@@ -100,13 +100,16 @@ exports.register = async (req, res) => {
         msg: "The username is already taken. Please choose another one."
       });
     } else {
+      const createdAt = new Date();
+
       let newUser = await User.create({
         username: req.body.username, email: req.body.email,
         password: bcrypt.hashSync(req.body.password, 10),
         phone_number: req.body.phone_number, profile_image: req.body.profile_image,
         first_name: req.body.first_name, last_name: req.body.last_name,
         is_confirmed: req.body.is_confirmed, user_role: req.body.user_role,
-        owner_description: req.body.owner_description
+        owner_description: req.body.owner_description,
+        created_at: createdAt,
       });
 
       res.status(201).json({
@@ -368,41 +371,41 @@ exports.editProfile = async (req, res) => {
 // Handles user account’s deletion.
 exports.delete = async (req, res) => {
   try {
-    if (req.loggedUserRole === "admin") {
-      let result = await User.destroy({ where: { username: req.params.idU } });
-      if (result == 1) {
-        return res.json({
-          success: true,
-          msg: `User permanently deleted successfully.`,
-        });
-      }
-
-      return res.status(404).json({
-        success: false,
-        msg: `The specified username does not exist.`,
+    // if (req.loggedUserRole === "admin") {
+    let result = await User.destroy({ where: { username: req.params.idU } });
+    if (result == 1) {
+      return res.json({
+        success: true,
+        msg: `User permanently deleted successfully.`,
       });
-    } else {
-      if (req.loggedUserId == req.params.idU) {
-        console.log(req.loggedUserId, req.params.idU);
-        let result = await User.destroy({ where: { username: req.params.idU } });
-        if (result == 1) {
-          return res.json({
-            success: true,
-            msg: `Your account has been permanently deleted.`,
-          });
-        }
-
-        return res.status(404).json({
-          success: false,
-          msg: `Your account does not exist.`,
-        });
-      } else {
-        return res.status(403).json({
-          success: false,
-          msg: `You are not authorized to delete other users.`,
-        });
-      }
     }
+
+    return res.status(404).json({
+      success: false,
+      msg: `The specified username does not exist.`,
+    });
+    // } else {
+    //   if (req.loggedUserId == req.params.idU) {
+    //     console.log(req.loggedUserId, req.params.idU);
+    //     let result = await User.destroy({ where: { username: req.params.idU } });
+    //     if (result == 1) {
+    //       return res.json({
+    //         success: true,
+    //         msg: `Your account has been permanently deleted.`,
+    //       });
+    //     }
+
+    //     return res.status(404).json({
+    //       success: false,
+    //       msg: `Your account does not exist.`,
+    //     });
+    //   } else {
+    //     return res.status(403).json({
+    //       success: false,
+    //       msg: `You are not authorized to delete other users.`,
+    //     });
+    //   }
+    // }
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
       res.status(503).json({
@@ -552,6 +555,61 @@ exports.removeFavorite = async (req, res) => {
       res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
+      });
+    }
+  }
+};
+
+// Handles user profile editing.
+exports.editBlock = async (req, res) => {
+  try {
+    let msg
+    let user = await User.findByPk(req.params.idU);
+    if (user === null) {
+      return res.status(404).json({
+        success: false,
+        msg: `Cannot find any user with username ${req.params.idU}`,
+      });
+    }
+
+    let affectedRows = await User.update({ is_blocked: !user.is_blocked }, {
+      where: { username: req.params.idU },
+    });
+
+    let updatedUser = await User.findByPk(req.params.idU);
+
+    if(updatedUser.is_blocked){
+      msg = `User with username ${req.params.idU} was blocked.`
+    }else{
+      msg = `User with username ${req.params.idU} was unblocked.`
+    }
+
+    if (affectedRows[0] === 0) {
+      return res.status(200).json({
+        success: true,
+        msg: `No updates were made on user with username ${req.params.idU}.`,
+      });
+    }
+
+    return res.json({
+      success: true,
+      msg: msg,
+    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        msg: error.errors.map((e) => e.message)
+      });
+    } else if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        msg: `Error updating user with username ${req.params.idU}.`,
       });
     }
   }
