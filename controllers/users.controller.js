@@ -88,9 +88,9 @@ exports.findAll = async (req, res) => {
 // Handles user registration to join the platform
 exports.register = async (req, res) => {
   try {
-    if (!req.body || !req.body.username || !req.body.password || !req.body.email) {
+    if (!req.body || !req.body.username || !req.body.password || !req.body.email || !req.body.first_name || !req.body.last_name) {
       console.log("here");
-      return res.status(400).json({ success: false, msg: "Username, email and password are mandatory" });
+      return res.status(400).json({ success: false, msg: "Fisrt name, last name, username, email and password are mandatory" });
     }
 
     let searchUser = await User.findOne({ where: { username: req.body.username } })
@@ -578,9 +578,9 @@ exports.editBlock = async (req, res) => {
 
     let updatedUser = await User.findByPk(req.params.idU);
 
-    if(updatedUser.is_blocked){
+    if (updatedUser.is_blocked) {
       msg = `User with username ${req.params.idU} was blocked.`
-    }else{
+    } else {
       msg = `User with username ${req.params.idU} was unblocked.`
     }
 

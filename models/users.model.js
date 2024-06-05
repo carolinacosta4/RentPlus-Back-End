@@ -18,17 +18,17 @@ module.exports = (sequelize, DataTypes) => {
       },
       phone_number: {
         type: DataTypes.TEXT,
-        allowNull: false,
+        allowNull: true,
         validate: { is: { args: /^[0-9-()+]+$/, msg: "The phone number provided is not in a valid format." } }
       },
       user_role: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: "user", //
+        defaultValue: "user",
       },
       profile_image: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       password: {
         type: DataTypes.STRING,
