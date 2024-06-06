@@ -37,13 +37,12 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   property_type.associate = (models) => {
-    // PHOTOS
     property_type.hasMany(models.property, {
       foreignKey: "property_type",
       as: "properties",
       onDelete: 'CASCADE'
-    });
-  };
+    })
+  }
 
-  return property_type;
+  return property_type
 };

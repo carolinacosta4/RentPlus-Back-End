@@ -13,7 +13,8 @@ router.use((req, res, next) => {
 // ROTAS
 router.route("/")
   .get(propertyController.findAll)
-  .post(authController.verifyToken, propertyController.createProperty);
+  // .post(authController.verifyToken, propertyController.createProperty);
+  .post(propertyController.createProperty);
 
 router.route("/:idP")
   .get(propertyController.findProperty)
