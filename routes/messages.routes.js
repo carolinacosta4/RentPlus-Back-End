@@ -17,7 +17,8 @@ router.route('/')
     .post(authController.verifyToken, MessageController.bodyValidator, MessageController.create);
 
 router.route('/:username')
-    .get(authController.verifyToken, MessageController.findAllFromSpecificUser);
+    // .get(authController.verifyToken, MessageController.findAllFromSpecificUser);
+    .get(MessageController.findAllFromSpecificUser);
 
 router.route('/:username/:ID')
     .delete(authController.verifyToken, MessageController.deleteMessage);

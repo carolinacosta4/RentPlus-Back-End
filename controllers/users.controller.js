@@ -83,7 +83,7 @@ exports.register = async (req, res) => {
 
     let searchUser = await User.findOne({ where: { username: req.body.username } })
     if (searchUser) {
-      res.status(409).json({
+      return res.status(409).json({
         success: false,
         msg: "The username is already taken. Please choose another one."
       });
@@ -100,7 +100,7 @@ exports.register = async (req, res) => {
         created_at: createdAt,
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         msg: "User created successfully.",
         links: [
@@ -417,14 +417,19 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, msg: "Must provide username and password." });
 
     let user = await User.findOne({ where: { username: req.body.username } });
+    console.log(user);
     if (!user) return res.status(404).json({ success: false, msg: "User not found." });
     const check = bcrypt.compareSync(req.body.password, user.password);
     if (!check) return res.status(401).json({ success: false, accessToken: null, msg: "Invalid credentials!" });
 
+    console.log(user.user_role);
+
     const token = jwt.sign({ id: user.username, role: user.user_role },
       config.SECRET, {
-      expiresIn: '24h'
+      expiresIn: '1h'
     });
+
+    console.log(user.user_role);
 
     return res.status(200).json({ success: true, accessToken: token });
 
@@ -613,7 +618,7 @@ exports.editRole = async (req, res) => {
       });
     }
 
-    let affectedRows = await User.update(req.body, {
+    let affectedRows = await User.update({ user_role: req.body.user_role }, {
       where: { username: req.loggedUserId },
     });
 
@@ -624,9 +629,16 @@ exports.editRole = async (req, res) => {
       });
     }
 
+    const user = await User.findOne({ where: { username: req.loggedUserId } })
+    const newToken = jwt.sign({ id: user.username, role: user.user_role },
+      config.SECRET, {
+      expiresIn: '1h'
+    });
+
     return res.json({
       success: true,
       msg: `User with username ${req.loggedUserId} was updated successfully.`,
+      accessToken: newToken,
     });
   } catch (error) {
     if (error instanceof ValidationError) {

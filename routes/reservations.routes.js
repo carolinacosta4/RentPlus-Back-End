@@ -16,7 +16,8 @@ router.use((req, res, next) => {
 
 router.route('/')
     .get(ReservationController.findAll)
-    .post(authController.verifyToken, ReservationController.bodyValidator, ReservationController.create)
+    // .post(authController.verifyToken, ReservationController.bodyValidator, ReservationController.create)
+    .post(ReservationController.bodyValidator, ReservationController.create)
 
 router.route('/:username/:ID')
     .get(authController.verifyToken, ReservationController.findOne)

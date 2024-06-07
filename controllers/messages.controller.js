@@ -33,7 +33,7 @@ exports.findAll = async (req, res) => {
 
 // Obtains all messages of logged user (authentication token must be provided in header). Has an optional limit counter.
 exports.findAllFromSpecificUser = async (req, res, next) => {
-    if (req.loggedUserId == req.params.username) {
+    // if (req.loggedUserId == req.params.username) {
         try {
             const { limit = 20 } = req.query;
 
@@ -64,14 +64,14 @@ exports.findAllFromSpecificUser = async (req, res, next) => {
             });
         }
         next()
-    }
-    else {
-        return res.status(403).json({
-            success: false,
-            error: "Forbidden",
-            msg: "You don’t have permission to access this route. You need to be the user who sends or receives the message.",
-        });
-    }
+    // }
+    // else {
+    //     return res.status(403).json({
+    //         success: false,
+    //         error: "Forbidden",
+    //         msg: "You don’t have permission to access this route. You need to be the user who sends or receives the message.",
+    //     });
+    // }
 };
 
 exports.bodyValidator = async (req, res, next) => {
