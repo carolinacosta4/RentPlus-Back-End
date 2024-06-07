@@ -26,7 +26,7 @@ router.route('/role')
   .patch(authController.verifyToken, userController.editRole)
 
 router.route("/:idU")
-  // .get(authController.verifyToken, userController.findUser)
+  // .get(authController.verifyToken, userController.findUser) //comentar aqui dps
   .get(userController.findUser)
   .patch(authController.verifyToken, userController.editProfile)
   .delete(authController.verifyToken, userController.delete);

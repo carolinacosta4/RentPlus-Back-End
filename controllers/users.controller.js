@@ -11,6 +11,18 @@ const Reservation = db.reservation
 
 const { Op, ValidationError, Sequelize } = require("sequelize");
 
+const cloudinary = require("cloudinary").v2;
+// cloudinary configuration
+cloudinary.config({
+  cloud_name: config.C_CLOUD_NAME,
+  api_key: config.C_API_KEY,
+  api_secret: config.C_API_SECRET
+});
+
+const multer = require('multer')  // continuar aqui
+let storage = multer.memoryStorage();
+const multerUploads = multer({ storage }).single('inputProfilePicture');
+
 // Obtains general information about all users. Route only available for admins. Has an optional limit counter.
 exports.findAll = async (req, res) => {
   let { page, limit, sort } = req.query;
@@ -76,9 +88,9 @@ exports.findAll = async (req, res) => {
 // Handles user registration to join the platform
 exports.register = async (req, res) => {
   try {
-    if (!req.body || !req.body.username || !req.body.password || !req.body.email) {
+    if (!req.body || !req.body.username || !req.body.password || !req.body.email || !req.body.first_name || !req.body.last_name) {
       console.log("here");
-      return res.status(400).json({ success: false, msg: "Username, email and password are mandatory" });
+      return res.status(400).json({ success: false, msg: "Fisrt name, last name, username, email and password are mandatory" });
     }
 
     let searchUser = await User.findOne({ where: { username: req.body.username } })
@@ -571,9 +583,9 @@ exports.editBlock = async (req, res) => {
 
     let updatedUser = await User.findByPk(req.params.idU);
 
-    if(updatedUser.is_blocked){
+    if (updatedUser.is_blocked) {
       msg = `User with username ${req.params.idU} was blocked.`
-    }else{
+    } else {
       msg = `User with username ${req.params.idU} was unblocked.`
     }
 
