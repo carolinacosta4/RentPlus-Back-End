@@ -166,7 +166,6 @@ exports.findProperty = async (req, res) => {
 
 // Handles the creation of a property ready for rental (authentication token must be provided in header).
 exports.createProperty = async (req, res) => {
-  console.log(req.body);
   try {
     if (req.loggedUserRole == 'owner') {
       const createdAt = new Date();

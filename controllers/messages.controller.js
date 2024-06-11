@@ -77,7 +77,7 @@ exports.findAllFromSpecificUser = async (req, res, next) => {
 exports.bodyValidator = async (req, res, next) => {
     if (!req.body.receiver_username || !req.body.content) {
         return res.status(400).json({
-            error: "Some required information are missing"
+            error: "Some required information is missing"
         })
     }
 
