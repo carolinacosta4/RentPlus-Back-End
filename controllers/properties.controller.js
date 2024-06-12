@@ -12,7 +12,7 @@ exports.findAll = async (req, res) => {
   let { type, page, limit } = req.query;
 
   const pageNumber = page && Number.parseInt(page) > 0 ? Number.parseInt(page) : 1;
-  const limitValue = limit && Number.parseInt(limit) > 0 ? Number.parseInt(limit) : 10;
+  const limitValue = limit && Number.parseInt(limit) > 0 ? Number.parseInt(limit) : null;
   const offset = (pageNumber - 1) * limitValue;
 
   try {
@@ -34,6 +34,7 @@ exports.findAll = async (req, res) => {
     }
 
     const typeCondition = type ? { type_name: { [Op.like]: type } } : null;
+    const allProperty = await Property.findAll()
 
     const properties = await Property.findAll({
       limit: limitValue, offset: offset, raw: true,
@@ -47,7 +48,8 @@ exports.findAll = async (req, res) => {
         {
           model: db.photos_property,
           as: 'photos',
-          attributes: ['photo']
+          attributes: ['photo'],
+          limit: 1
         },
       ]
     });
@@ -61,12 +63,15 @@ exports.findAll = async (req, res) => {
         ];
       });
 
+      let total = Math.ceil(allProperty.length / limitValue) || null
+
       res.status(200).json({
         success: true,
         pagination: [{
-          "total": properties.length,
+          "total": allProperty.length,
           "current": pageNumber,
-          "limit": limitValue
+          "limit": limitValue,
+          "totalPages": total
         }],
         data: properties,
         links: [{ rel: "add-user", href: `/properties`, method: "POST" }],
@@ -166,17 +171,24 @@ exports.findProperty = async (req, res) => {
 
 // Handles the creation of a property ready for rental (authentication token must be provided in header).
 exports.createProperty = async (req, res) => {
+  console.log(req.body);
   try {
     if (req.loggedUserRole == 'owner') {
       const createdAt = new Date();
 
       let newProperty = await Property.create({
-        owner_username: req.loggedUserId, property_type: req.body.property_type,
-        title: req.body.title, description: req.body.description,
-        location: req.body.location, map_url: req.body.map_url,
-        daily_price: req.body.daily_price, guest_number: req.body.guest_number,
-        bathrooms: req.body.bathrooms, bedrooms: req.body.bedrooms,
-        beds: req.body.beds, created_at: createdAt,
+        owner_username: req.loggedUserId, 
+        property_type: req.body.property_type,
+        title: req.body.title, 
+        description: req.body.description,
+        location: req.body.location, 
+        map_url: req.body.map_url,
+        daily_price: req.body.daily_price, 
+        guest_number: req.body.guest_number,
+        bathrooms: req.body.bathrooms, 
+        bedrooms: req.body.bedrooms,
+        beds: req.body.beds, 
+        created_at: createdAt,
       });
 
       if (req.body.photos && req.body.photos.length > 0) {
@@ -578,6 +590,62 @@ exports.deleteReview = async (req, res) => {
       res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
+      });
+    }
+  }
+};
+
+// Handles property editing.
+exports.editBlock = async (req, res) => {
+  try {
+    console.log('here');
+    let msg
+    let property = await Property.findByPk(req.params.idP);
+    if (property === null) {
+      return res.status(404).json({
+        success: false,
+        msg: `Cannot find any property with ID ${req.params.idP}`,
+      });
+    }
+
+    let affectedRows = await Property.update({ is_blocked: !property.is_blocked }, {
+      where: { ID: req.params.idP },
+    });
+
+    let updatedProperty = await Property.findByPk(req.params.idP);
+
+    if (updatedProperty.is_blocked) {
+      msg = `User with ID ${req.params.idP} was blocked.`
+    } else {
+      msg = `User with ID ${req.params.idP} was unblocked.`
+    }
+
+    if (affectedRows[0] === 0) {
+      return res.status(200).json({
+        success: true,
+        msg: `No updates were made on property with ID ${req.params.idP}.`,
+      });
+    }
+
+    return res.json({
+      success: true,
+      msg: msg,
+    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        msg: error.errors.map((e) => e.message)
+      });
+    } else if (error instanceof Sequelize.ConnectionError) {
+      res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        msg: `Error updating property with ID ${req.params.idP}.`,
       });
     }
   }

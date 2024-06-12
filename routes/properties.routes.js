@@ -26,10 +26,11 @@ router
   .get(propertyController.findReviews)
   .post(authController.verifyToken, propertyController.createReview);
 
-router
-  .route("/:idP/reviews/:idR")
-  .put(propertyController.updateReview)
-  .delete(propertyController.deleteReview);
+router.route("/:idP/reviews/:idR")
+  .delete(authController.verifyToken, propertyController.deleteReview);
+
+router.route("/block/:idP")
+  .patch(propertyController.editBlock);
 
 // Define a catch-all route for unrecognized requests
 router.all("*", (req, res) => {

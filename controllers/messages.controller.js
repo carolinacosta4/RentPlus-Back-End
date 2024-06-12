@@ -33,48 +33,61 @@ exports.findAll = async (req, res) => {
 
 // Obtains all messages of logged user (authentication token must be provided in header). Has an optional limit counter.
 exports.findAllFromSpecificUser = async (req, res, next) => {
-    if (req.loggedUserId == req.params.username) {
-        try {
-            const { limit = 20 } = req.query;
+    // if (req.loggedUserId == req.params.username) {
+    try {
+        const { limit = 20 } = req.query;
 
-            const messages = await Message.findAndCountAll({
-                where: {
-                    [Op.or]: [
-                        { sender_username: req.params.username },
-                        { receiver_username: req.params.username }
-                    ]
+        const messages = await Message.findAndCountAll({
+            where: {
+                [Op.or]: [
+                    { sender_username: req.params.username },
+                    { receiver_username: req.params.username }
+                ]
+            },
+            include: [
+                {
+                    model: db.user,
+                    as: 'sender',
+                    attributes: ['username', 'profile_image', 'first_name', 'last_name']
                 },
-                limit: parseInt(limit),
-                order: [['created_at', 'DESC']]
-            });
+                {
+                    model: db.user,
+                    as: 'receiver',
+                    attributes: ['username', 'profile_image', 'first_name', 'last_name']
+                },
+            ],
+            limit: parseInt(limit),
+            order: [['created_at', 'DESC']]
+        });
 
-            return res.status(200).json({
-                success: true,
-                data: messages.rows,
-                pagination: {
-                    total: messages.count,
-                    limit: parseInt(limit)
-                }
-            });
-        } catch (err) {
-            res.status(500).json({
-                success: false,
-                error: "Server Error",
-                msg: err.message || "An unexpected error occurred. Please try again later"
-            });
-        }
-        next()
-    }
-    else {
-        return res.status(403).json({
+        return res.status(200).json({
+            success: true,
+            data: messages.rows,
+            pagination: {
+                total: messages.count,
+                limit: parseInt(limit)
+            }
+        });
+    } catch (err) {
+        res.status(500).json({
             success: false,
-            error: "Forbidden",
-            msg: "You don’t have permission to access this route. You need to be the user who sends or receives the message.",
+            error: "Server Error",
+            msg: err.message || "An unexpected error occurred. Please try again later"
         });
     }
+    next()
+    // }
+    // else {
+    //     return res.status(403).json({
+    //         success: false,
+    //         error: "Forbidden",
+    //         msg: "You don’t have permission to access this route. You need to be the user who sends or receives the message.",
+    //     });
+    // }
 };
 
 exports.bodyValidator = async (req, res, next) => {
+    console.log(req.body.receiver_username);
     if (!req.body.receiver_username || !req.body.content) {
         return res.status(400).json({
             error: "Some required information are missing"
@@ -99,9 +112,8 @@ exports.bodyValidator = async (req, res, next) => {
             msg: "The specified receiver does not exist"
         });
     }
-    if (req.loggedUserRole == 'owner' || receiverUser.user_role == 'owner') {
-        next()
-    } else {
+
+    if (req.loggedUserRole != 'owner' || receiverUser.user_role != 'owner') {
         return res.status(400).json({
             success: false,
             error: "Messages between not owners",
@@ -109,12 +121,7 @@ exports.bodyValidator = async (req, res, next) => {
         });
     }
 
-    if(req.loggedUserId == req.body.receiver_username){
-        return res.status(400).json({
-            success: false,
-            msg: `Receiver can't be the same as Sender`
-        });
-    }
+    next()
 };
 
 // Handles sending messages to another user (authentication token must be provided in header).
