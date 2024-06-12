@@ -55,22 +55,22 @@ module.exports = (sequelize, DataTypes) => {
       guest_number: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        // validate: { notNull: { msg: "Number of guests is required!" } }
+        validate: { notNull: { msg: "Number of guests is required!" } }
       },
       bathrooms: {
         type: DataTypes.SMALLINT,
         allowNull: false,
-        // validate: { notNull: { msg: "Number of bathrooms is required!" } }
+        validate: { notNull: { msg: "Number of bathrooms is required!" } }
       },
       bedrooms: {
         type: DataTypes.SMALLINT,
         allowNull: false,
-        // validate: { notNull: { msg: "Number of bedrooms is required!" } }
+        validate: { notNull: { msg: "Number of bedrooms is required!" } }
       },
       beds: {
         type: DataTypes.SMALLINT,
         allowNull: false,
-        // validate: { notNull: { msg: "Number of beds is required!" } }
+        validate: { notNull: { msg: "Number of beds is required!" } }
       },
       is_blocked: {
         type: DataTypes.BOOLEAN,

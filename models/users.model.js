@@ -67,10 +67,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      otp: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
     },
     {
       // DEFINIÇÕES

@@ -29,8 +29,7 @@ router.route("/:idU")
   // .get(authController.verifyToken, userController.findUser) //comentar aqui dps
   .get(userController.findUser)
   .patch(authController.verifyToken, userController.editProfile)
-  .delete(userController.delete);
-// .delete(authController.verifyToken, userController.delete);
+  .delete(authController.verifyToken, userController.delete);
 
 router.route("/:idU/favorites")
   .post(authController.verifyToken, userController.addFavorite);
