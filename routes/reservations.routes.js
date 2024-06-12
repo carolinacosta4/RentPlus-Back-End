@@ -22,6 +22,7 @@ router.route('/')
 router.route('/:username/:ID')
     .get(authController.verifyToken, ReservationController.findOne)
 
+    // este deve ser na de cima
 router.route('/:ID')
     .delete(authController.verifyToken, ReservationController.deleteReservation)
 

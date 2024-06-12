@@ -15,6 +15,7 @@ router.use((req, res, next) => {
 router.route('/')
     .get(MessageController.findAll)
     .post(authController.verifyToken, MessageController.bodyValidator, MessageController.create);
+    // .post(authController.verifyToken, MessageController.create);
 
 router.route('/:username')
     // .get(authController.verifyToken, MessageController.findAllFromSpecificUser);
