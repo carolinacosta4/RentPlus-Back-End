@@ -99,6 +99,14 @@ exports.register = async (req, res) => {
         success: false,
         msg: "The username is already taken. Please choose another one."
       });
+
+    let searchUserEmail = await User.findOne({ where: { email: req.body.email } })
+    if (searchUserEmail) {
+      res.status(409).json({
+        success: false,
+        msg: "The email is already in use. Please choose another one."
+      });}
+      
     } else {
       const createdAt = new Date();
 
