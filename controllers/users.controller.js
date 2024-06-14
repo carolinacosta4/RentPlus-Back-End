@@ -433,6 +433,11 @@ exports.login = async (req, res) => {
     const check = bcrypt.compareSync(req.body.password, user.password);
     if (!check) return res.status(401).json({ success: false, accessToken: null, msg: "Invalid credentials!" });
 
+    let isBlocked = user.is_blocked
+    if(isBlocked){
+      return res.status(403).json({ success: false, accessToken: null, msg: "User blocked" });
+    }
+
     const token = jwt.sign({ id: user.username, role: user.user_role },
       config.SECRET, {
       expiresIn: '24h'
