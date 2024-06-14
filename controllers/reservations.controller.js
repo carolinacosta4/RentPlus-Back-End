@@ -156,7 +156,6 @@ exports.bodyValidator = async (req, res, next) => {
         let today = new Date()
         const dateInB = new Date(req.body.dateIn);
         const dateOutB = new Date(req.body.dateOut)
-        console.log(today);
         if (dateInB < today || dateOutB <= today) {
             return res.status(400).json({
                 success: false,
@@ -192,23 +191,33 @@ exports.bodyValidator = async (req, res, next) => {
                                 }
                             }
                         ]
-                    }
-                ],
-                [Op.or]: [
+                    },
                     {
-                        status_reservation_ID: 1
-                    }, {
-                        status_reservation_ID: 3
+                        [Op.and]: [
+                            {
+                                dateIn: {
+                                    [Op.gte]: dateInB
+                                }
+                            },
+                            {
+                                dateOut: {
+                                    [Op.lte]: dateOutB
+                                }
+                            }
+                        ]
                     }
-                ]
+                ], 
+                status_reservation_ID: {
+                    [Op.in]: [1, 3]
+                }
             }
         })
+        console.log(existingReservations)
         if (existingReservations.length > 0) {
-            console.log(existingReservations);
             return res.status(400).json({
                 success: false,
                 error: "Property already booked",
-                msg: "You can't proceed with the reservation because there is already a reservation during the chosen dates."
+                msg: "You cant proceed with the reservation because there is already a reservation during the chosen dates."
             });
         }
 
@@ -226,13 +235,14 @@ exports.bodyValidator = async (req, res, next) => {
 
 // Handles user reservation by sending a request of reservation to the owner (authentication token must be provided in header).
 exports.create = async (req, res) => {
-    if (req.loggedUserId) {
+    // if (req.loggedUserId) {
         const t = await db.sequelize.transaction();
 
         try {
             const newReservation = await Reservation.create({
                 property_ID: req.body.property_ID,
-                username: req.loggedUserId,
+                // username: req.loggedUserId,
+                username: req.body.username,
                 status_reservation_ID: 1,
                 dateIn: req.body.dateIn,
                 dateOut: req.body.dateOut,
@@ -292,14 +302,14 @@ exports.create = async (req, res) => {
                 });
             }
         }
-    }
-    else {
-        return res.status(403).json({
-            success: false,
-            error: "Forbidden",
-            msg: "You must be logged in to rent a property.",
-        });
-    }
+    // }
+    // else {
+    //     return res.status(403).json({
+    //         success: false,
+    //         error: "Forbidden",
+    //         msg: "You must be logged in to rent a property.",
+    //     });
+    // }
 };
 
 // Handles owner of property confirmation or cancelation of reservation order (authentication token must be provided in header). 

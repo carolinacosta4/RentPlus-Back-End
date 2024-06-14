@@ -28,7 +28,7 @@ exports.findAll = async (req, res) => {
   let { page, limit, sort } = req.query;
 
   const pageNumber = page && Number.parseInt(page) > 0 ? Number.parseInt(page) : 1;
-  const limitValue = limit && Number.parseInt(limit) > 0 ? Number.parseInt(limit) : 10;
+  const limitValue = limit && Number.parseInt(limit) > 0 ? Number.parseInt(limit) : null;
   const offset = (pageNumber - 1) * limitValue;
   let users
 
@@ -89,13 +89,12 @@ exports.findAll = async (req, res) => {
 exports.register = async (req, res) => {
   try {
     if (!req.body || !req.body.username || !req.body.password || !req.body.email || !req.body.first_name || !req.body.last_name) {
-      console.log("here");
       return res.status(400).json({ success: false, msg: "Fisrt name, last name, username, email and password are mandatory" });
     }
 
     let searchUser = await User.findOne({ where: { username: req.body.username } })
     if (searchUser) {
-      res.status(409).json({
+      return res.status(409).json({
         success: false,
         msg: "The username is already taken. Please choose another one."
       });
@@ -120,7 +119,7 @@ exports.register = async (req, res) => {
         created_at: createdAt,
       });
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         msg: "User created successfully.",
         links: [
@@ -322,27 +321,37 @@ exports.editProfile = async (req, res) => {
           success: false,
           msg: "At least one field must be provided to update.",
         });
-      } else if (!req.body.first_name & !req.body.last_name & !req.body.username & !req.body.phone_number) {
+      } else if (!req.body.first_name & !req.body.last_name & !req.body.username & !req.body.phone_number & !req.body.owner_description) {
         return res.status(400).json({
           success: false,
-          msg: "You can only edit your first name, last name, username or phone number.",
+          msg: "You can only edit your first name, last name, username, phone number or description.",
         });
       }
-
-      console.log("Updating user with data:", req.body);
 
 
       let affectedRows = await User.update(req.body, {
         where: { username: req.params.idU },
       });
 
-      console.log("Affected Rows:", affectedRows);
-
 
       if (affectedRows[0] === 0) {
         return res.status(200).json({
           success: true,
           msg: `No updates were made on user with username ${req.params.idU}.`,
+        });
+      }
+
+      if (req.body.username) {
+        const updatedUser = await User.findOne({ where: { username: req.body.username } })
+        const updatedToken = jwt.sign({ id: updatedUser.username, role: updatedUser.user_role },
+          config.SECRET, {
+          expiresIn: '1h'
+        })
+
+        return res.json({
+          success: true,
+          msg: `User with username ${req.params.idU} was updated successfully.`,
+          newToken: updatedToken
         });
       }
 
@@ -379,41 +388,40 @@ exports.editProfile = async (req, res) => {
 // Handles user account’s deletion.
 exports.delete = async (req, res) => {
   try {
-    // if (req.loggedUserRole === "admin") {
-    let result = await User.destroy({ where: { username: req.params.idU } });
-    if (result == 1) {
-      return res.json({
-        success: true,
-        msg: `User permanently deleted successfully.`,
+    if (req.loggedUserRole === "admin") {
+      let result = await User.destroy({ where: { username: req.params.idU } });
+      if (result == 1) {
+        return res.json({
+          success: true,
+          msg: `User permanently deleted successfully.`,
+        });
+      }
+
+      return res.status(404).json({
+        success: false,
+        msg: `The specified username does not exist.`,
       });
+    } else {
+      if (req.loggedUserId == req.params.idU) {
+        let result = await User.destroy({ where: { username: req.params.idU } });
+        if (result == 1) {
+          return res.json({
+            success: true,
+            msg: `Your account has been permanently deleted.`,
+          });
+        }
+
+        return res.status(404).json({
+          success: false,
+          msg: `Your account does not exist.`,
+        });
+      } else {
+        return res.status(403).json({
+          success: false,
+          msg: `You are not authorized to delete other users.`,
+        });
+      }
     }
-
-    return res.status(404).json({
-      success: false,
-      msg: `The specified username does not exist.`,
-    });
-    // } else {
-    //   if (req.loggedUserId == req.params.idU) {
-    //     console.log(req.loggedUserId, req.params.idU);
-    //     let result = await User.destroy({ where: { username: req.params.idU } });
-    //     if (result == 1) {
-    //       return res.json({
-    //         success: true,
-    //         msg: `Your account has been permanently deleted.`,
-    //       });
-    //     }
-
-    //     return res.status(404).json({
-    //       success: false,
-    //       msg: `Your account does not exist.`,
-    //     });
-    //   } else {
-    //     return res.status(403).json({
-    //       success: false,
-    //       msg: `You are not authorized to delete other users.`,
-    //     });
-    //   }
-    // }
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
       res.status(503).json({
@@ -448,11 +456,10 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ id: user.username, role: user.user_role },
       config.SECRET, {
-      expiresIn: '24h'
+      expiresIn: '1h'
     });
 
     return res.status(200).json({ success: true, accessToken: token });
-
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
       res.status(503).json({
@@ -638,7 +645,7 @@ exports.editRole = async (req, res) => {
       });
     }
 
-    let affectedRows = await User.update(req.body, {
+    let affectedRows = await User.update({ user_role: req.body.user_role }, {
       where: { username: req.loggedUserId },
     });
 
@@ -649,9 +656,16 @@ exports.editRole = async (req, res) => {
       });
     }
 
+    const user = await User.findOne({ where: { username: req.loggedUserId } })
+    const newToken = jwt.sign({ id: user.username, role: user.user_role },
+      config.SECRET, {
+      expiresIn: '1h'
+    });
+
     return res.json({
       success: true,
       msg: `User with username ${req.loggedUserId} was updated successfully.`,
+      accessToken: newToken,
     });
   } catch (error) {
     if (error instanceof ValidationError) {
