@@ -13,13 +13,11 @@ router.use((req, res, next) => {
 })
 
 router.route('/')
-    .get(MessageController.findAll)
+    .get(MessageController.findAll) //
     .post(authController.verifyToken, MessageController.bodyValidator, MessageController.create);
-    // .post(authController.verifyToken, MessageController.create);
 
 router.route('/:username')
-    // .get(authController.verifyToken, MessageController.findAllFromSpecificUser);
-    .get(MessageController.findAllFromSpecificUser);
+    .get(authController.verifyToken, MessageController.findAllFromSpecificUser);
 
 router.route('/:username/:ID')
     .delete(authController.verifyToken, MessageController.deleteMessage);

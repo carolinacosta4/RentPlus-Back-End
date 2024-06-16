@@ -390,6 +390,14 @@ exports.findReviews = async (req, res) => {
   const offset = (pageNumber - 1) * limitValue;
 
   try {
+    let property = await Property.findByPk(req.params.idP);
+    if (property === null) {
+        return res.status(404).json({
+          success: false,
+          data: `Cannot find any property with ID ${req.params.idP}`,
+        });
+    }
+
     const reservations = await db.reservation.findAll({
       attributes: ['property_ID', 'ID'],
       where: { property_ID: req.params.idP },
@@ -410,15 +418,6 @@ exports.findReviews = async (req, res) => {
         where: { reservation_ID: reservationsFound },
         raw: true
       });
-
-
-      let property = await Property.findByPk(req.params.idP);
-      if (property === null) {
-        return res.status(404).json({
-          success: false,
-          data: `Cannot find any property with ID ${req.params.idP}`,
-        });
-      }
 
       return res.json({
         success: true,
@@ -468,6 +467,13 @@ exports.createReview = async (req, res) => {
       });
     }
 
+    if (!req.body.comment || !req.body.rating || !req.body.reservation_ID) {
+      return res.status(400).json({
+        success: false,
+        msg: "Comment, reservation_ID and rating are required."
+      });
+    }
+
     let reservation = await Reservation.findOne({
       where: {
         property_ID: req.params.idP,
@@ -480,13 +486,6 @@ exports.createReview = async (req, res) => {
       return res.status(403).json({
         success: false,
         msg: "You do not have a reservation for this property. You cannot leave a review."
-      });
-    }
-
-    if (!req.body.comment || !req.body.rating || !req.body.reservation_ID) {
-      return res.status(400).json({
-        success: false,
-        msg: "Comment, reservation_ID and rating are required."
       });
     }
 
@@ -595,7 +594,7 @@ exports.deleteReview = async (req, res) => {
   }
 };
 
-// Handles property editing.
+// Handles property blocking.
 exports.editBlock = async (req, res) => {
   try {
     console.log('here');

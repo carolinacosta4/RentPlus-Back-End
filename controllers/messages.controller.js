@@ -113,7 +113,7 @@ exports.bodyValidator = async (req, res, next) => {
         });
     }
 
-    if (req.loggedUserRole != 'owner' || receiverUser.user_role != 'owner') {
+    if (req.loggedUserRole != 'owner' && receiverUser.user_role != 'owner') {
         return res.status(400).json({
             success: false,
             error: "Messages between not owners",
