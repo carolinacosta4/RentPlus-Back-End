@@ -20,7 +20,8 @@ router.use((req, res, next) => {
 
 router.route("/")
   .get(authController.verifyToken, userController.findAll)
-  .post(userController.multerUploads, userController.register)
+  .post(userController.register)
+  // .post(userController.multerUploads, userController.register)
   .patch(userController.resetPassword);
 
 router.route('/:idU/role')
