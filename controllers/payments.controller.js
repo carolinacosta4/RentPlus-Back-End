@@ -173,10 +173,9 @@ exports.changeStatus = async (req, res) => {
             payment.status_payment = status.ID;
             await payment.save();
 
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
                 msg: "Payment was updated successfully",
-                data: updatedPayment
             });
         }
         else {

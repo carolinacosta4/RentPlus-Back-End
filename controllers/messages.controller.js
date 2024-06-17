@@ -33,7 +33,7 @@ exports.findAll = async (req, res) => {
 
 // Obtains all messages of logged user (authentication token must be provided in header). Has an optional limit counter.
 exports.findAllFromSpecificUser = async (req, res, next) => {
-    // if (req.loggedUserId == req.params.username) {
+    if (req.loggedUserId == req.params.username) {
     try {
         const { limit = 20 } = req.query;
 
@@ -76,28 +76,35 @@ exports.findAllFromSpecificUser = async (req, res, next) => {
         });
     }
     next()
-    // }
-    // else {
-    //     return res.status(403).json({
-    //         success: false,
-    //         error: "Forbidden",
-    //         msg: "You don’t have permission to access this route. You need to be the user who sends or receives the message.",
-    //     });
-    // }
+    }
+    else {
+        return res.status(403).json({
+            success: false,
+            error: "Forbidden",
+            msg: "You don’t have permission to access this route. You need to be the user who sends or receives the message.",
+        });
+    }
 };
 
 exports.bodyValidator = async (req, res, next) => {
-    console.log(req.body.receiver_username);
     if (!req.body.receiver_username || !req.body.content) {
         return res.status(400).json({
+            success: false,
             error: "Some required information is missing"
         })
     }
+
+    if(req.body.receiver_username == req.loggedUserId)
+        return res.status(400).json({
+            success: false,
+            error: "Receiver can't be the same as Sender"
+        })
 
     if (req.body.property_ID != null) {
         const property = await Property.findByPk(req.body.property_ID);
         if (!property) {
             return res.status(404).json({
+                success: false,
                 error: `There is no property with the ID ${req.body.property_ID}`
             });
         }
@@ -113,7 +120,7 @@ exports.bodyValidator = async (req, res, next) => {
         });
     }
 
-    if (req.loggedUserRole != 'owner' || receiverUser.user_role != 'owner') {
+    if (req.loggedUserRole != 'owner' && receiverUser.user_role != 'owner') {
         return res.status(400).json({
             success: false,
             error: "Messages between not owners",

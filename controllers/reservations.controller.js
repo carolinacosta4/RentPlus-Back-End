@@ -1,9 +1,19 @@
 const db = require("../models/index.js");
 const Reservation = db.reservation;
-const { ValidationError } = require('sequelize');
+const { Op, ValidationError } = require('sequelize');
+const nodemailer = require('nodemailer');
 const Property = db.property
 const Payment = db.payment;
-const { Op } = require('sequelize');
+const User = db.user;
+const config = require("../config/db.config.js");
+
+const transporter = nodemailer.createTransport({
+    service: 'hotmail',
+    auth: {
+      user: config.MAIL_USER,
+      pass: config.MAIL_PASSWORD
+    }
+  });
 
 // Only for programmers to analyze the changes made during testings
 exports.findAll = async (req, res) => {
@@ -117,7 +127,7 @@ exports.bodyValidator = async (req, res, next) => {
         if (!property) {
             return res.status(404).json({
                 success: false,
-                error: "Not Found",
+                error: "Property Not Found",
                 msg: `There is no property with the ID ${req.body.property_ID}`
             });
         }
@@ -242,8 +252,7 @@ exports.create = async (req, res) => {
         try {
             const newReservation = await Reservation.create({
                 property_ID: req.body.property_ID,
-                // username: req.loggedUserId,
-                username: req.body.username,
+                username: req.loggedUserId,
                 status_reservation_ID: 1,
                 dateIn: req.body.dateIn,
                 dateOut: req.body.dateOut,
@@ -257,6 +266,30 @@ exports.create = async (req, res) => {
                 amount: req.body.total_price,
                 payment_type: req.body.payment_type
             }, { transaction: t });
+
+            let property = await Property.findByPk(req.body.property_ID)
+            let user = await User.findOne({where: {username: req.loggedUserId}})
+        
+            const mailOptions = {
+                from: config.MAIL_USER,
+                to: user.email,
+                subject: `Confirmation of Your Reservation at ${property.title}`,
+                html: `<div style="font-family: 'Inter', sans-serif; font-weight: 300; text-align: center; padding: 20px; font-size: 14px;">
+                    <p>Dear ${user.first_name} ${user.last_name},</p>
+                    <h1>We are pleased to confirm your reservation.</h1>
+                    <p><strong>Reservation Details:</strong></p>
+                    <ul style="list-style-type: none; padding: 0;">
+                        <li><strong>Property: </strong>${property.title}</li>
+                        <li><strong>Check-in Date: </strong>${newReservation.dateIn}</li>
+                        <li><strong>Check-out Date: </strong>${newReservation.dateOut}</li>
+                        <li><strong>Total Price: </strong>${newReservation.total_price}€</li>
+                    </ul>
+                    <p>Please take a moment to review the details above. If everything looks correct, no further action is needed. If you have any questions or need assistance, please don't hesitate to contact the host through the Rent+ messaging system.</p>
+                    <p>Thank you for choosing our platform to choose your vacation place!</p>
+                    <p>Warm regards,<br>Rent+ Team</p>
+                    <p>🏠✨</p>
+                </div>`
+            }
 
             await t.commit(); // Commit da transação se tudo estiver correto
 
@@ -279,11 +312,18 @@ exports.create = async (req, res) => {
                 ]
             })
 
-            return res.status(201).json({
-                success: true,
-                msg: "Reservation created successfully.",
-                data: {
-                    reservation: reservation
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                  console.error('Failed to send confirmation email:', error);
+                  return res.status(201).json({ success: true, msg: 'Reservation created, but failed to send confirmation email' });
+                } else {
+                    return res.status(201).json({
+                        success: true,
+                        msg: "Reservation created successfully.",
+                        data: {
+                            reservation: reservation
+                        }
+                    });
                 }
             });
         } catch (err) {
@@ -327,7 +367,7 @@ exports.changeStatus = async (req, res) => {
         });
     }
 
-    if (req.loggedUserId == reservation.username) {
+    if (req.loggedUserId == reservation.username) { // or owner
         try {
             const status = await db.status_reservation.findOne({ where: { status_name: newStatusName } });
             if (!status) {

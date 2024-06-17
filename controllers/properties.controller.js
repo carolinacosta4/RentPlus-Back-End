@@ -65,7 +65,7 @@ exports.findAll = async (req, res) => {
 
       let total = Math.ceil(allProperty.length / limitValue) || null
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         pagination: [{
           "total": allProperty.length,
@@ -77,7 +77,7 @@ exports.findAll = async (req, res) => {
         links: [{ rel: "add-user", href: `/properties`, method: "POST" }],
       });
     } else {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         msg: "No property found."
       });
@@ -85,12 +85,12 @@ exports.findAll = async (req, res) => {
 
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -156,12 +156,12 @@ exports.findProperty = async (req, res) => {
     });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -203,7 +203,7 @@ exports.createProperty = async (req, res) => {
         await newProperty.addAmenities(req.body.amenities)
       }
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         msg: "Property created successfully.",
         property_ID: newProperty.ID,
@@ -221,18 +221,18 @@ exports.createProperty = async (req, res) => {
     }
   } catch (error) {
     if (error instanceof ValidationError) {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         msg: error.errors.map((e) => e.message)
       });
     } else if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         success: false,
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         success: false,
         msg: "An unexpected error occurred. Please try again later."
@@ -307,12 +307,12 @@ exports.editProperty = async (req, res) => {
     });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -365,13 +365,13 @@ exports.deleteProperty = async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         success: false,
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         success: false,
         msg: "An unexpected error occurred. Please try again later."
@@ -389,6 +389,14 @@ exports.findReviews = async (req, res) => {
   const offset = (pageNumber - 1) * limitValue;
 
   try {
+    let property = await Property.findByPk(req.params.idP);
+    if (property === null) {
+        return res.status(404).json({
+          success: false,
+          data: `Cannot find any property with ID ${req.params.idP}`,
+        });
+    }
+
     const reservations = await db.reservation.findAll({
       attributes: ['property_ID', 'ID'],
       where: { property_ID: req.params.idP },
@@ -410,15 +418,6 @@ exports.findReviews = async (req, res) => {
         raw: true
       });
 
-
-      let property = await Property.findByPk(req.params.idP);
-      if (property === null) {
-        return res.status(404).json({
-          success: false,
-          data: `Cannot find any property with ID ${req.params.idP}`,
-        });
-      }
-
       return res.json({
         success: true,
         pagination: [{
@@ -436,19 +435,19 @@ exports.findReviews = async (req, res) => {
         ],
       });
     } else {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         msg: "No review found."
       });
     }
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -459,11 +458,19 @@ exports.findReviews = async (req, res) => {
 // Allows a user to create a review for a specified property.
 exports.createReview = async (req, res) => {
   try {
+    console.log(req.body);
     let property = await Property.findByPk(req.params.idP);
     if (!property) {
       return res.status(404).json({
         success: false,
         data: `Cannot find any property with ID ${req.params.idP}`,
+      });
+    }
+
+    if (!req.body.rating || !req.body.reservation_ID) {
+      return res.status(400).json({
+        success: false,
+        msg: "Reservation_ID and rating are required."
       });
     }
 
@@ -479,13 +486,6 @@ exports.createReview = async (req, res) => {
       return res.status(403).json({
         success: false,
         msg: "You do not have a reservation for this property. You cannot leave a review."
-      });
-    }
-
-    if (!req.body.comment || !req.body.rating || !req.body.reservation_ID) {
-      return res.status(400).json({
-        success: false,
-        msg: "Comment, reservation_ID and rating are required."
       });
     }
 
@@ -521,12 +521,12 @@ exports.createReview = async (req, res) => {
     });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -581,12 +581,12 @@ exports.deleteReview = async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -594,10 +594,9 @@ exports.deleteReview = async (req, res) => {
   }
 };
 
-// Handles property editing.
+// Handles property blocking.
 exports.editBlock = async (req, res) => {
   try {
-    console.log('here');
     let msg
     let property = await Property.findByPk(req.params.idP);
     if (property === null) {
@@ -637,12 +636,12 @@ exports.editBlock = async (req, res) => {
         msg: error.errors.map((e) => e.message)
       });
     } else if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         msg: `Error updating property with ID ${req.params.idP}.`,
       });
