@@ -176,7 +176,6 @@ exports.changeStatus = async (req, res) => {
             return res.status(200).json({
                 success: true,
                 msg: "Payment was updated successfully",
-                data: updatedPayment
             });
         }
         else {
