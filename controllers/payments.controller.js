@@ -20,9 +20,9 @@ exports.findAll = async (req, res) => {
                     attributes: ['type']
                 }], order: [["ID", 'DESC']]
         });
-        res.status(200).json(payments);
+        return res.status(200).json(payments);
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        return res.status(500).json({ error: "Internal server error" });
     }
 };
 
@@ -61,9 +61,9 @@ exports.create = async (req, res) => {
         });
     } catch (err) {
         if (err instanceof ValidationError) {
-            res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
+            return res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
         } else {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 msg: err.message || "Some error occurred while creating the payment."
             });
@@ -128,7 +128,7 @@ exports.findOne = async (req, res) => {
 
 
     } catch (err) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false, msg: err.message || "An unexpected error occurred. Please try again later"
         })
     };
@@ -173,7 +173,7 @@ exports.changeStatus = async (req, res) => {
             payment.status_payment = status.ID;
             await payment.save();
 
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
                 msg: "Payment was updated successfully",
                 data: updatedPayment
@@ -189,9 +189,9 @@ exports.changeStatus = async (req, res) => {
 
     } catch (err) {
         if (err instanceof ValidationError) {
-            res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
+            return res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
         } else {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 msg: err.message || "An unexpected error occurred. Please try again later"
             });
