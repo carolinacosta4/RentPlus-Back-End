@@ -13,7 +13,6 @@ router.use((req, res, next) => {
 })
 
 router.route('/')
-    // .get(authController.verifyToken, paymentTypeController.findAll)
-    .get(paymentTypeController.findAll)
+    .get(authController.verifyToken, paymentTypeController.findAll)
 
 module.exports = router;

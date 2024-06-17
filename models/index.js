@@ -41,7 +41,7 @@ db.review = require("./reviews.model.js")(sequelize, DataTypes);
 
 // Define associations
 Object.values(db).forEach((model) => {
-  console.log(db);
+  // console.log(db);
   if (model.associate) {
     model.associate(db);
   }

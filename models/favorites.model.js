@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
           model: "user",
           key: "username",
         },
+        primaryKey: true,
       },
       property_ID: {
         type: DataTypes.INTEGER,
@@ -18,12 +19,12 @@ module.exports = (sequelize, DataTypes) => {
           key: "ID",
         },
         primaryKey: true,
-        // onDelete: 'CASCADE',
       },
     },
     {
       freezeTableName: true,
       timestamps: false,
+      autoIncrement: false,
     }
   );
 
@@ -39,10 +40,10 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     favorites.belongsTo(models.property, {
-      foreignKey: "ID", // username is the FK in the favorites
+      foreignKey: "property_ID", // username is the FK in the favorites
       targetKey: "ID", // username is the PK in the user
-      as: "userFavorites",
-      // onDelete: 'CASCADE',
+      as: "properties",
+      onDelete: 'CASCADE',
     });
   };
 

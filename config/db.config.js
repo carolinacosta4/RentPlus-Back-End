@@ -12,7 +12,13 @@ const config = {
           acquire: 30000,     //maximum time, in milliseconds, that pool will try to get connection before throwing error
           idle: 10000    //maximum time, in milliseconds, that a connection can be idle before being released
      },
-     SECRET: process.env.SECRET
+     SECRET: process.env.SECRET,
+     MAIL_USER: process.env.MAIL_USER,
+     MAIL_PASSWORD: process.env.MAIL_PASSWORD,
+
+     C_CLOUD_NAME: process.env.C_CLOUD_NAME,
+     C_API_KEY: process.env.C_API_KEY,
+     C_API_SECRET: process.env.C_API_SECRET,
 };
 
 module.exports = config;

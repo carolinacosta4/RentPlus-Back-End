@@ -17,16 +17,16 @@ router.use((req, res, next) => {
   next();
 });
 
-router.route("/")
-  // .get(authController.verifyToken, userController.findAll)
-  .get(userController.findAll)
-  .post(userController.register);
 
-router.route('/role')
+router.route("/")
+  .get(authController.verifyToken, userController.findAll)
+  .post(userController.multerUploads, userController.register)
+  .patch(userController.resetPassword);
+
+router.route('/:idU/role')
   .patch(authController.verifyToken, userController.editRole)
 
 router.route("/:idU")
-  // .get(authController.verifyToken, userController.findUser) //comentar aqui dps
   .get(userController.findUser)
   .patch(authController.verifyToken, userController.editProfile)
   .delete(authController.verifyToken, userController.delete);
@@ -40,18 +40,19 @@ router.route("/:idU/favorites/:idP")
 router.route("/login")
   .post(userController.login);
 
-router.route("/block/:idU")
+router.route("/:idU/block")
   .patch(userController.editBlock);
 
 router.route("/reset-password-email")
   .post(userController.recoverEmail);
 
 router.route("/:idU/reviews")
-  // .get(authController.verifyToken, userController.findUser)
   .get(userController.findOwnerReviews)
 
+router.route("/:idU/confirmation")
+  .patch(userController.confirmEmail)
+
 router.all("*", function (req, res) {
-  //send an predefined error message
   res
     .status(400)
     .json({

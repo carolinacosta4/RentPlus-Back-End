@@ -66,7 +66,7 @@ module.exports = (sequelize, DataTypes) => {
       owner_description: {
         type: DataTypes.TEXT,
         allowNull: true,
-      },
+      }
     },
     {
       // DEFINIÇÕES

@@ -29,7 +29,7 @@ router
 router.route("/:idP/reviews/:idR")
   .delete(authController.verifyToken, propertyController.deleteReview);
 
-router.route("/block/:idP")
+router.route("/:idP/block")
   .patch(propertyController.editBlock);
 
 // Define a catch-all route for unrecognized requests
