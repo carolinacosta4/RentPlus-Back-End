@@ -90,7 +90,7 @@ exports.bodyValidator = async (req, res, next) => {
     if (!req.body.receiver_username || !req.body.content) {
         return res.status(400).json({
             success: false,
-            error: "Some required information are missing"
+            error: "Some required information is missing"
         })
     }
 

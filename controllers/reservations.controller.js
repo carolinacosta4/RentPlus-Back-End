@@ -115,6 +115,14 @@ exports.findOne = async (req, res) => {
 
 exports.bodyValidator = async (req, res, next) => {
     try {
+        if (isNaN(req.body.property_ID) || parseInt(req.body.property_ID) != req.body.property_ID) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid ID value",
+                msg: "Property ID must be an integer number"
+            })
+        }
+
         const property = await Property.findByPk(req.body.property_ID);
         if (!property) {
             return res.status(404).json({
@@ -129,13 +137,6 @@ exports.bodyValidator = async (req, res, next) => {
                 success: false,
                 error: "Missing required field",
                 msg: "property_ID, dateIn, dateOut and payment_type and total_price are required"
-            })
-        }
-        if (isNaN(req.body.property_ID) || parseInt(req.body.property_ID) != req.body.property_ID) {
-            return res.status(400).json({
-                success: false,
-                error: "Invalid ID value",
-                msg: "Property ID must be an integer number"
             })
         }
 

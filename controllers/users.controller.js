@@ -106,6 +106,14 @@ exports.register = async (req, res) => {
         success: false,
         msg: "The username is already taken. Please choose another one."
       });
+
+    let searchUserEmail = await User.findOne({ where: { email: req.body.email } })
+    if (searchUserEmail) {
+      res.status(409).json({
+        success: false,
+        msg: "The email is already in use. Please choose another one."
+      });}
+      
     } else {
       const createdAt = new Date();
 
@@ -476,6 +484,11 @@ exports.login = async (req, res) => {
 
     const check = bcrypt.compareSync(req.body.password, user.password);
     if (!check) return res.status(401).json({ success: false, accessToken: null, msg: "Invalid credentials!" });
+
+    let isBlocked = user.is_blocked
+    if(isBlocked){
+      return res.status(403).json({ success: false, accessToken: null, msg: "User blocked" });
+    }
 
     const token = jwt.sign({ id: user.username, role: user.user_role },
       config.SECRET, {
