@@ -21,7 +21,7 @@ router.use((req, res, next) => {
 router.route("/")
   // .get(authController.verifyToken, userController.findAll)
   .get(userController.findAll)
-  .post(userController.multerUploads, userController.register);
+  .post(userController.multerUploads, userController.register); //MULTER AQUI
 
 router.route('/role')
   .patch(authController.verifyToken, userController.editRole)
