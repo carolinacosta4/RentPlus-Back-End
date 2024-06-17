@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-
+const nodemailer = require('nodemailer');
 const config = require("../config/db.config.js");
 const db = require("../models/index.js");
 const User = db.user;
@@ -33,12 +33,12 @@ exports.findAll = async (req, res) => {
   let users
 
   try {
-    // if (req.loggedUserRole !== "admin") {
-    //   return res.status(403).json({
-    //     success: false,
-    //     msg: "You don't have permission to access this route."
-    //   });
-    // }
+    if (req.loggedUserRole !== "admin") {
+      return res.status(403).json({
+        success: false,
+        msg: "You don't have permission to access this route."
+      });
+    }
 
     if (sort) {
       if (sort.toLowerCase() != 'asc' && sort.toLowerCase() != 'desc') {
@@ -60,7 +60,7 @@ exports.findAll = async (req, res) => {
       ];
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       pagination: [{
         "total": `${users.length}`,
@@ -72,18 +72,26 @@ exports.findAll = async (req, res) => {
     });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
     }
   }
 };
+
+const transporter = nodemailer.createTransport({
+  service: 'hotmail',
+  auth: {
+    user: config.MAIL_USER,
+    pass: config.MAIL_PASSWORD
+  }
+});
 
 // Handles user registration to join the platform
 exports.register = async (req, res) => {
@@ -106,32 +114,53 @@ exports.register = async (req, res) => {
         password: bcrypt.hashSync(req.body.password, 10),
         phone_number: req.body.phone_number, profile_image: req.body.profile_image,
         first_name: req.body.first_name, last_name: req.body.last_name,
-        is_confirmed: req.body.is_confirmed, user_role: req.body.user_role,
+        is_confirmed: false, user_role: req.body.user_role,
         owner_description: req.body.owner_description,
         created_at: createdAt,
       });
 
-      return res.status(201).json({
-        success: true,
-        msg: "User created successfully.",
-        links: [
-          { rel: "self", href: `/users/${newUser.username}`, method: "GET" },
-          { rel: "login-user", href: `/users/login`, method: "POST" }
-        ],
+      const mailOptions = {
+        from: config.MAIL_USER,
+        to: newUser.email,
+        subject: 'Almost There! Confirm Your Email for Rent Plus',
+        html: `<div style="font-family: 'Inter', sans-serif; font-weight: 300; text-align: center; padding: 20px; font-size: 14px;">
+            <h1 style="font-family: 'Inter', sans-serif; font-weight: 600;">Welcome to Rent+, ${newUser.first_name}!</h1>
+            <p>We're thrilled to have you on board! To get started, please confirm your email address by clicking the button below:</p>
+            <p style="margin: 30px 0; font-size: 16px;"><a href="http://localhost:4000/confirmation/${newUser.username}" style="color: #ffffff; background-color: #133e1a; padding: 15px 25px; text-decoration: none; border-radius: 8px;">Confirm Email</a></p>
+            <p>Once confirmed, you'll be able to explore all the features we have to offer!</p>
+            <p>If you didn't sign up for Rent+, no worries! Simply ignore this email.</p>
+            <p>Looking forward to helping you find your next vacation home!</p>
+            <p>Cheers,<br>Rent+ Team</p>
+            <p>🏠✨</p>
+        </div>`
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error('Failed to send confirmation email:', error);
+          return res.status(500).json({ success: false, msg: 'User created, but failed to send confirmation email' });
+        } else {
+          return res.status(201).json({
+            success: true,
+            msg: "User created successfully.",
+            links: [
+              { rel: "self", href: `/users/${newUser.username}`, method: "GET" },
+              { rel: "login-user", href: `/users/login`, method: "POST" }
+            ],
+          });
+        }
       });
     }
   } catch (error) {
     if (error instanceof ValidationError) {
-      res
-        .status(400)
-        .json({ success: false, msg: error.errors.map((e) => e.message) });
+      return res.status(400).json({ success: false, msg: error.errors.map((e) => e.message) });
     } else if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -144,13 +173,6 @@ exports.findUser = async (req, res) => {
   let { field } = req.query;
 
   try {
-    // if (req.loggedUserRole !== "admin" & req.loggedUserId != req.params.idU) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     msg: "You don't have permission to access this route."
-    //   });
-    // }
-
     let userFound = await User.findByPk(req.params.idU)
 
     if (!userFound) {
@@ -169,7 +191,13 @@ exports.findUser = async (req, res) => {
             {
               model: db.favorites,
               as: 'favorites',
-              attributes: ['property_ID']
+              attributes: ['property_ID'],
+              include: [
+                {
+                  model: db.property,
+                  as: 'properties'
+                }
+              ]
             }
           ]
         });
@@ -189,7 +217,13 @@ exports.findUser = async (req, res) => {
             {
               model: db.property,
               as: 'properties',
-              attributes: ['title', 'ID']
+              attributes: ['title', 'ID', 'daily_price', 'location'],
+              include: [
+                {
+                  model: db.reservation,
+                  as: "reservations"
+                }
+              ]
             }
           ]
         });
@@ -283,12 +317,12 @@ exports.findUser = async (req, res) => {
     });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -364,12 +398,12 @@ exports.editProfile = async (req, res) => {
         msg: error.errors.map((e) => e.message)
       });
     } else if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         msg: `Error updating user with username ${req.params.idU}.`,
       });
@@ -416,12 +450,12 @@ exports.delete = async (req, res) => {
     }
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         error2: error,
         msg: "An unexpected error occurred. Please try again later."
@@ -438,6 +472,8 @@ exports.login = async (req, res) => {
 
     let user = await User.findOne({ where: { username: req.body.username } });
     if (!user) return res.status(404).json({ success: false, msg: "User not found." });
+    if (!user.is_confirmed) return res.status(400).json({ success: false, msg: "Email not confirmed." });
+
     const check = bcrypt.compareSync(req.body.password, user.password);
     if (!check) return res.status(401).json({ success: false, accessToken: null, msg: "Invalid credentials!" });
 
@@ -449,12 +485,12 @@ exports.login = async (req, res) => {
     return res.status(200).json({ success: true, accessToken: token });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -464,18 +500,98 @@ exports.login = async (req, res) => {
 
 exports.recoverEmail = async (req, res) => {
   try {
-    console.log('Here');
-    return res.json({
-      "message": "Recovery Password email sent."
+    if (!req.body.email)
+      return res.status(400).json({
+        success: false,
+        msg: "Email is mandatory."
+      });
+
+    const user = await User.findOne({ where: { email: req.body.email } })
+    if (!user)
+      return res.status(400).json({
+        success: false,
+        msg: "User not found."
+      });
+
+    const mailOptions = {
+      from: config.MAIL_USER,
+      to: user.email,
+      subject: 'Password Reset',
+      html: `<div style="font-family: 'Inter', sans-serif; font-weight: 300; text-align: center; padding: 20px; font-size: 14px;">
+      <h1 style="font-family: 'Inter', sans-serif; font-weight: 600;">Password Reset Request</h1>
+      <p>We received a request to reset your password. To proceed, please click the button below:</p>
+      <p style="margin: 30px 0; font-size: 16px;"><a href="http://localhost:4000/reset-password/${user.username}" style="color: #ffffff; background-color: #133e1a; padding: 15px 25px; text-decoration: none; border-radius: 8px;">Reset Password</a></p>
+      <p>If you didn't request a password reset, no worries! Simply ignore this email.</p>
+      <p>Cheers,<br>Rent+ Support Team</p>
+      <p>🔒✨</p>
+      </div>`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        return res.status(500).json({
+          success: false,
+          msg: 'Failed to send recovery email.'
+        });
+      }
+      return res.json({
+        success: true,
+        msg: "Recovery Password email sent."
+      });
     });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
+        error: "Server Error",
+        msg: "An unexpected error occurred. Please try again later."
+      });
+    }
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    if (!req.body.password || !req.body.username)
+      return res.status(400).json({
+        success: false,
+        msg: "Password and username are mandatory."
+      });
+
+    const user = await User.findOne({ where: { username: req.body.username } })
+    if (!user)
+      return res.status(400).json({
+        success: false,
+        msg: "User not found."
+      });
+
+    let affectedRows = await User.update({ password: bcrypt.hashSync(req.body.password, 10) }, {
+      where: { username: req.body.username },
+    });
+
+    if (affectedRows[0] === 0) {
+      return res.status(200).json({
+        success: true,
+        msg: `No updates were made on user with username ${req.body.username}.`,
+      });
+    }
+
+    return res.json({
+      success: true,
+      msg: `User with username ${req.body.username} was updated successfully.`,
+    });
+  } catch (error) {
+    if (error instanceof Sequelize.ConnectionError) {
+      return res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -506,7 +622,7 @@ exports.addFavorite = async (req, res) => {
       property_ID: req.body.property_ID,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       msg: "Property added to favorites.",
       links: [
@@ -515,13 +631,14 @@ exports.addFavorite = async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error)
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -554,12 +671,12 @@ exports.removeFavorite = async (req, res) => {
     });
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
@@ -579,7 +696,7 @@ exports.editBlock = async (req, res) => {
       });
     }
 
-    let affectedRows = await User.update({ is_blocked: !user.is_blocked }, {
+    await User.update({ is_blocked: !user.is_blocked }, {
       where: { username: req.params.idU },
     });
 
@@ -589,13 +706,6 @@ exports.editBlock = async (req, res) => {
       msg = `User with username ${req.params.idU} was blocked.`
     } else {
       msg = `User with username ${req.params.idU} was unblocked.`
-    }
-
-    if (affectedRows[0] === 0) {
-      return res.status(200).json({
-        success: true,
-        msg: `No updates were made on user with username ${req.params.idU}.`,
-      });
     }
 
     return res.json({
@@ -609,12 +719,50 @@ exports.editBlock = async (req, res) => {
         msg: error.errors.map((e) => e.message)
       });
     } else if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
+        success: false,
+        msg: `Error updating user with username ${req.params.idU}.`,
+      });
+    }
+  }
+};
+
+exports.confirmEmail = async (req, res) => {
+  try {
+    let user = await User.findByPk(req.params.idU);
+    if (user === null) {
+      return res.status(404).json({
+        success: false,
+        msg: `Cannot find any user with username ${req.params.idU}`,
+      });
+    }
+
+    await User.update({ is_confirmed: true }, {
+      where: { username: req.params.idU }
+    });
+
+    return res.json({
+      success: true,
+      msg: 'User email confirmed.',
+    });
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({
+        success: false,
+        msg: error.errors.map((e) => e.message)
+      });
+    } else if (error instanceof Sequelize.ConnectionError) {
+      return res.status(503).json({
+        error: "Database Error",
+        msg: "There was an issue connecting to the database. Please try again later"
+      });
+    } else {
+      return res.status(500).json({
         success: false,
         msg: `Error updating user with username ${req.params.idU}.`,
       });
@@ -625,6 +773,12 @@ exports.editBlock = async (req, res) => {
 // Handles updating user role.
 exports.editRole = async (req, res) => {
   try {
+    if (req.params.idU != req.loggedUserId)
+      return res.status(400).json({
+        success: false,
+        msg: "You are not authorized to perform this action.",
+      });
+
     if (!req.body.user_role) {
       return res.status(400).json({
         success: false,
@@ -661,12 +815,12 @@ exports.editRole = async (req, res) => {
         msg: error.errors.map((e) => e.message)
       });
     } else if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         msg: `Error updating user with username ${req.params.idU}.`,
       });
@@ -710,19 +864,19 @@ exports.findOwnerReviews = async (req, res) => {
         data: reviews,
       });
     } else {
-      res.status(404).json({
+      return res.status(404).json({
         success: false,
         msg: "No review found."
       });
     }
   } catch (error) {
     if (error instanceof Sequelize.ConnectionError) {
-      res.status(503).json({
+      return res.status(503).json({
         error: "Database Error",
         msg: "There was an issue connecting to the database. Please try again later"
       });
     } else {
-      res.status(500).json({
+      return res.status(500).json({
         error: "Server Error",
         msg: "An unexpected error occurred. Please try again later."
       });
