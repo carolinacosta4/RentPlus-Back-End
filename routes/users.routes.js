@@ -17,10 +17,11 @@ router.use((req, res, next) => {
   next();
 });
 
+
 router.route("/")
   // .get(authController.verifyToken, userController.findAll)
   .get(userController.findAll)
-  .post(userController.register);
+  .post(userController.multerUploads, userController.register);
 
 router.route('/role')
   .patch(authController.verifyToken, userController.editRole)
