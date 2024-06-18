@@ -470,8 +470,8 @@ exports.findReviews = async (req, res) => {
         ],
       });
     } else {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         msg: "No review found."
       });
     }
@@ -641,23 +641,16 @@ exports.editBlock = async (req, res) => {
       });
     }
 
-    let affectedRows = await Property.update({ is_blocked: !property.is_blocked }, {
+    await Property.update({ is_blocked: !property.is_blocked }, {
       where: { ID: req.params.idP },
     });
 
     let updatedProperty = await Property.findByPk(req.params.idP);
 
     if (updatedProperty.is_blocked) {
-      msg = `User with ID ${req.params.idP} was blocked.`
+      msg = `Property with ID ${req.params.idP} was blocked.`
     } else {
-      msg = `User with ID ${req.params.idP} was unblocked.`
-    }
-
-    if (affectedRows[0] === 0) {
-      return res.status(200).json({
-        success: true,
-        msg: `No updates were made on property with ID ${req.params.idP}.`,
-      });
+      msg = `Property with ID ${req.params.idP} was unblocked.`
     }
 
     return res.json({
