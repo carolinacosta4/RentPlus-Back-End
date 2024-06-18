@@ -23,6 +23,94 @@ const multer = require('multer')  // continuar aqui
 let storage = multer.memoryStorage();
 const multerUploads = multer({ storage }).single('inputProfilePicture');
 
+exports.changeProfilePicture = async (req, res) => {
+  console.log(req.file);
+  try {
+    let user = await User.findByPk(req.params.idU);
+    if (user === null) {
+      return res.status(404).json({
+        success: false,
+        msg: `Cannot find any user with username ${req.params.idU}`,
+      });
+    }
+    if (req.loggedUserId == req.params.idU) {
+      let user_image = null;
+      if (req.file) {
+        // Destruir a imagem antiga no Cloudinary se existir
+        if (user.cloudinary_id) {
+          await cloudinary.uploader.destroy(user.cloudinary_id);
+        }
+        const b64 = Buffer.from(req.file.buffer).toString("base64");
+        
+        // Converter o base64 para Data URI
+        let dataURI = `data:${req.file.mimetype};base64,${b64}`;
+        // Fazer upload para o Cloudinary
+        let result = await cloudinary.uploader.upload(dataURI, { resource_type: "auto" });
+        user_image = result;
+      }
+
+      await User.update({
+        profile_image: user_image ? user_image.url : null,
+        cloudinary_id: user_image ? user_image.public_id : null
+      }, { where: { username: req.params.idU } });
+
+      return res.status(201).json({ 
+        success: true, 
+        profile_image: user_image ? user_image.url : null, 
+        cloudinary_id: user_image ? user_image.public_id : null,
+        msg: "Profile picture updated successfully!" });
+    }
+
+    return res.status(403).json({
+      success: false,
+      msg: "You are not authorized to edit other users.",
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    return res.status(500).json({ success: false, msg: 'An error occurred while updating profile picture.' });
+  }
+};
+
+// exports.changeProfilePicture = async (req, res) => {
+
+//   try {
+//     let user = await User.findByPk(req.params.idU);
+//     if (user === null) {
+//       return res.status(404).json({
+//         success: false,
+//         msg: `Cannot find any user with username ${req.params.idU}`,
+//       });
+//     }
+//     if (req.loggedUserId == req.params.idU) {
+//       let user_image = null
+//       if (req.body.file) {
+//         // await cloudinary.uploader.destroy(user.cloudinary_id); //VOLTAR AQUI DPS
+
+//         const b64 = Buffer.from(req.file.buffer).toString("base64");
+//         let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+//         let result = await cloudinary.uploader.upload(dataURI, { resource_type: "auto" });
+//         user_image = result;
+//       }
+
+//       await User.update({
+//         profile_image: user_image ? user_image.url : null, // save URL to access the image
+//         cloudinary_id: user_image ? user_image.public_id : null // save image ID to delete it
+//       }, { where: { username: req.params.idU } })
+
+//       return res.status(201).json({ success: true, msg: "Profile picture updated successfully!" });
+//     }
+
+//     return res.status(403).json({
+//       success: false,
+//       msg: "You are not authorized to edit other users.",
+//     });
+//   } catch (error) {
+//     if(error instanceof multer.MulterError){
+//       console.log(error.name);
+//     }
+//   }
+// }
+
 // Obtains general information about all users. Route only available for admins. Has an optional limit counter.
 exports.findAll = async (req, res) => {
   let { page, limit, sort } = req.query;
@@ -115,24 +203,24 @@ exports.register = async (req, res) => {
         msg: "The email is already in use. Please choose another one."
       });
     }
-      
-      const createdAt = new Date();
 
-      let newUser = await User.create({
-        username: req.body.username, email: req.body.email,
-        password: bcrypt.hashSync(req.body.password, 10),
-        phone_number: req.body.phone_number, profile_image: req.body.profile_image,
-        first_name: req.body.first_name, last_name: req.body.last_name,
-        is_confirmed: false, user_role: req.body.user_role,
-        owner_description: req.body.owner_description,
-        created_at: createdAt,
-      });
+    const createdAt = new Date();
 
-      const mailOptions = {
-        from: config.MAIL_USER,
-        to: newUser.email,
-        subject: 'Almost There! Confirm Your Email for Rent Plus',
-        html: `<div style="font-family: 'Inter', sans-serif; font-weight: 300; text-align: center; padding: 20px; font-size: 14px;">
+    let newUser = await User.create({
+      username: req.body.username, email: req.body.email,
+      password: bcrypt.hashSync(req.body.password, 10),
+      phone_number: req.body.phone_number, profile_image: req.body.profile_image,
+      first_name: req.body.first_name, last_name: req.body.last_name,
+      is_confirmed: false, user_role: req.body.user_role,
+      owner_description: req.body.owner_description,
+      created_at: createdAt,
+    });
+
+    const mailOptions = {
+      from: config.MAIL_USER,
+      to: newUser.email,
+      subject: 'Almost There! Confirm Your Email for Rent Plus',
+      html: `<div style="font-family: 'Inter', sans-serif; font-weight: 300; text-align: center; padding: 20px; font-size: 14px;">
             <h1 style="font-family: 'Inter', sans-serif; font-weight: 600;">Welcome to Rent+, ${newUser.first_name}!</h1>
             <p>We're thrilled to have you on board! To get started, please confirm your email address by clicking the button below:</p>
             <p style="margin: 30px 0; font-size: 16px;"><a href="http://localhost:4000/confirmation/${newUser.username}" style="color: #ffffff; background-color: #133e1a; padding: 15px 25px; text-decoration: none; border-radius: 8px;">Confirm Email</a></p>
@@ -142,23 +230,23 @@ exports.register = async (req, res) => {
             <p>Cheers,<br>Rent+ Team</p>
             <p>🏠✨</p>
         </div>`
-      };
+    };
 
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error('Failed to send confirmation email:', error);
-          return res.status(500).json({ success: false, msg: 'User created, but failed to send confirmation email' });
-        } else {
-          return res.status(201).json({
-            success: true,
-            msg: "User created successfully.",
-            links: [
-              { rel: "self", href: `/users/${newUser.username}`, method: "GET" },
-              { rel: "login-user", href: `/users/login`, method: "POST" }
-            ],
-          });
-        }
-      });
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Failed to send confirmation email:', error);
+        return res.status(500).json({ success: false, msg: 'User created, but failed to send confirmation email' });
+      } else {
+        return res.status(201).json({
+          success: true,
+          msg: "User created successfully.",
+          links: [
+            { rel: "self", href: `/users/${newUser.username}`, method: "GET" },
+            { rel: "login-user", href: `/users/login`, method: "POST" }
+          ],
+        });
+      }
+    });
   } catch (error) {
     if (error instanceof ValidationError) {
       return res.status(400).json({ success: false, msg: error.errors.map((e) => e.message) });
@@ -362,7 +450,6 @@ exports.editProfile = async (req, res) => {
         });
       }
 
-
       let affectedRows = await User.update(req.body, {
         where: { username: req.params.idU },
       });
@@ -388,6 +475,7 @@ exports.editProfile = async (req, res) => {
           newToken: updatedToken
         });
       }
+
 
       return res.json({
         success: true,
@@ -486,7 +574,7 @@ exports.login = async (req, res) => {
     if (!check) return res.status(401).json({ success: false, accessToken: null, msg: "Invalid credentials!" });
 
     let isBlocked = user.is_blocked
-    if(isBlocked){
+    if (isBlocked) {
       return res.status(403).json({ success: false, accessToken: null, msg: "User blocked" });
     }
 

@@ -12,6 +12,14 @@ const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
   },
 });
 
+const cloudinary = require("cloudinary").v2;
+// cloudinary configuration
+cloudinary.config({
+  cloud_name: dbConfig.C_CLOUD_NAME,
+  api_key: dbConfig.C_API_KEY,
+  api_secret: dbConfig.C_API_SECRET
+});
+
 (async () => {
   try {
     await sequelize.authenticate();
