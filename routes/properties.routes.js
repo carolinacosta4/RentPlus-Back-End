@@ -5,6 +5,10 @@ const authController = require("../controllers/auth.controller");
 
 const router = express.Router();
 
+const multer = require('multer')  // continuar aqui
+let storage = multer.memoryStorage();
+const multerUploads = multer({ storage }).fields([{name: 'inputPropertyImages', maxCount: 20}]);
+
 // Middleware for all routes related to properties
 router.use((req, res, next) => {
   next();
@@ -13,11 +17,11 @@ router.use((req, res, next) => {
 // ROTAS
 router.route("/")
   .get(propertyController.findAll)
-  .post(authController.verifyToken, propertyController.createProperty);
+  .post(authController.verifyToken, multerUploads, propertyController.createProperty);
 
 router.route("/:idP")
   .get(propertyController.findProperty)
-  .patch(authController.verifyToken, propertyController.editProperty)
+  .patch(authController.verifyToken, multerUploads, propertyController.editProperty)
   .delete(authController.verifyToken, propertyController.deleteProperty);
 
 router.route("/:idP/reviews")

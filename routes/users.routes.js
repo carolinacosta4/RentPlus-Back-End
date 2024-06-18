@@ -17,12 +17,19 @@ router.use((req, res, next) => {
   next();
 });
 
+const multer = require('multer')  // continuar aqui
+let storage = multer.memoryStorage();
+const multerUploads = multer({ storage }).single('inputProfilePicture');
+
 
 router.route("/")
   .get(authController.verifyToken, userController.findAll)
   .post(userController.register)
-  // .post(userController.multerUploads, userController.register)
   .patch(userController.resetPassword);
+
+router.route("/:idU/change-profile-picture")
+  // .patch(authController.verifyToken, userController.changeProfilePicture)
+  .patch(authController.verifyToken, multerUploads, userController.changeProfilePicture)
 
 router.route('/:idU/role')
   .patch(authController.verifyToken, userController.editRole)
@@ -52,6 +59,8 @@ router.route("/:idU/reviews")
 
 router.route("/:idU/confirmation")
   .patch(userController.confirmEmail)
+
+
 
 router.all("*", function (req, res) {
   res

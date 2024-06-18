@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(128),
         allowNull: false,
       },
+      cloudinary_id: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       freezeTableName: true,

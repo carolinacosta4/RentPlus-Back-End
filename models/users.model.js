@@ -66,7 +66,11 @@ module.exports = (sequelize, DataTypes) => {
       owner_description: {
         type: DataTypes.TEXT,
         allowNull: true,
-      }
+      },
+      cloudinary_id: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       // DEFINIÇÕES

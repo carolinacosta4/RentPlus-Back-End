@@ -4,8 +4,17 @@ const Property = db.property;
 const Review = db.review;
 const Reservation = db.reservation
 const Photo = db.photos_property
+const config = require("../config/db.config.js");
 
-const { Op, ValidationError, Sequelize, where } = require("sequelize");
+const { Op, ValidationError, Sequelize } = require("sequelize");
+
+const cloudinary = require("cloudinary").v2;
+// cloudinary configuration
+cloudinary.config({
+  cloud_name: config.C_CLOUD_NAME,
+  api_key: config.C_API_KEY,
+  api_secret: config.C_API_SECRET
+});
 
 // Obtains general information about all properties. Can be filtered by properties type.
 exports.findAll = async (req, res) => {
@@ -45,14 +54,13 @@ exports.findAll = async (req, res) => {
           where: typeCondition,
           attributes: ['type_name']
         },
-        {
-          model: db.photos_property,
-          as: 'photos',
-          attributes: ['photo'],
-          limit: 1
-        },
       ]
     });
+
+    for (let property of properties) {
+      let photo = await Photo.findOne({ where: { property_ID: property.ID } })
+      property.photo = photo.dataValues.photo
+    }
 
     if (properties.length > 0) {
       properties.forEach((property) => {
@@ -176,31 +184,37 @@ exports.createProperty = async (req, res) => {
       const createdAt = new Date();
 
       let newProperty = await Property.create({
-        owner_username: req.loggedUserId, 
+        owner_username: req.loggedUserId,
         property_type: req.body.property_type,
-        title: req.body.title, 
+        title: req.body.title,
         description: req.body.description,
-        location: req.body.location, 
+        location: req.body.location,
         map_url: req.body.map_url,
-        daily_price: req.body.daily_price, 
+        daily_price: req.body.daily_price,
         guest_number: req.body.guest_number,
-        bathrooms: req.body.bathrooms, 
+        bathrooms: req.body.bathrooms,
         bedrooms: req.body.bedrooms,
-        beds: req.body.beds, 
+        beds: req.body.beds,
         created_at: createdAt,
       });
 
-      if (req.body.photos && req.body.photos.length > 0) {
-        for (let photo of req.body.photos) {
+      if (req.files) {
+        for (let file of req.files.inputPropertyImages) {
+          const b64 = Buffer.from(file.buffer).toString("base64");
+          let dataURI = `data:${file.mimetype};base64,${b64}`;
+          let result = await cloudinary.uploader.upload(dataURI, { resource_type: "auto" });
           await Photo.create({
             property_ID: newProperty.ID,
-            photo: photo
-          })
+            photo: result ? result.url : null,
+            cloudinary_id: result ? result.public_id : null
+          });
         }
       }
 
       if (req.body.amenities && req.body.amenities.length > 0) {
-        await newProperty.addAmenities(req.body.amenities)
+        for (let amenity of req.body.amenities.split(',')) {
+          await newProperty.addAmenities(amenity)
+        }
       }
 
       return res.status(201).json({
@@ -270,20 +284,23 @@ exports.editProperty = async (req, res) => {
         where: { ID: req.params.idP },
       });
 
-      if (req.body.photos) {
-        await Photo.destroy({ where: { property_ID: req.params.idP } });
-        for (let photo of req.body.photos) {
+      if (req.files.inputPropertyImages) {
+        await Photo.destroy({ where: { property_ID: property.ID } })
+        for (let file of req.files.inputPropertyImages) {
+          const b64 = Buffer.from(file.buffer).toString("base64");
+          let dataURI = `data:${file.mimetype};base64,${b64}`;
+          let result = await cloudinary.uploader.upload(dataURI, { resource_type: "auto" });
           await Photo.create({
-            property_ID: req.params.idP,
-            photo: photo
+            property_ID: property.ID,
+            photo: result ? result.url : null,
+            cloudinary_id: result ? result.public_id : null
           });
         }
-        affectedRows = 1
       }
 
       if (req.body.amenities) {
-        await property.setAmenities(req.body.amenities);
-        affectedRows = 1
+        const amenities = req.body.amenities.split(',');
+        await property.setAmenities(amenities);
       }
 
       if (affectedRows[0] === 0) {
@@ -391,10 +408,10 @@ exports.findReviews = async (req, res) => {
   try {
     let property = await Property.findByPk(req.params.idP);
     if (property === null) {
-        return res.status(404).json({
-          success: false,
-          data: `Cannot find any property with ID ${req.params.idP}`,
-        });
+      return res.status(404).json({
+        success: false,
+        data: `Cannot find any property with ID ${req.params.idP}`,
+      });
     }
 
     const reservations = await db.reservation.findAll({
@@ -458,7 +475,6 @@ exports.findReviews = async (req, res) => {
 // Allows a user to create a review for a specified property.
 exports.createReview = async (req, res) => {
   try {
-    console.log(req.body);
     let property = await Property.findByPk(req.params.idP);
     if (!property) {
       return res.status(404).json({
@@ -477,7 +493,7 @@ exports.createReview = async (req, res) => {
     let reservation = await Reservation.findOne({
       where: {
         property_ID: req.params.idP,
-        username: req.loggedUserId, 
+        username: req.loggedUserId,
         ID: req.body.reservation_ID
       }
     });

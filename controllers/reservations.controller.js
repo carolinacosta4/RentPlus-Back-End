@@ -235,7 +235,7 @@ exports.bodyValidator = async (req, res, next) => {
         next()
     }
     catch (err) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: "Server error",
             msg: "An unexpected error occurred. Please try again later"
@@ -391,7 +391,7 @@ exports.changeStatus = async (req, res) => {
                 ]
             });
 
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
                 msg: 'Reservation updated successfully.',
                 data: updatedReservation
@@ -472,7 +472,7 @@ exports.deleteReservation = async (req, res) => {
                 msg: 'Reservation deleted successfully.'
             });
         } catch (err) {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 error: "Server Error",
                 msg: err.message || 'An unexpected error occurred. Please try again later'
@@ -551,7 +551,7 @@ exports.getUserReservations = async (req, res) => {
                 }
             });
         } catch (err) {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 error: "Internal Server Error",
                 msg: err.message || 'An unexpected error occurred. Please try again later'
