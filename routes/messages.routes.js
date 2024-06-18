@@ -13,7 +13,7 @@ router.use((req, res, next) => {
 })
 
 router.route('/')
-    .get(MessageController.findAll) //
+    .get(MessageController.findAll)
     .post(authController.verifyToken, MessageController.bodyValidator, MessageController.create);
 
 router.route('/:username')
