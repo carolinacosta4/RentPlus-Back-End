@@ -14,6 +14,7 @@ router.use((req, res, next) => {
 
 router.route('/')
     .get(paymentController.findAll)
+    .post(paymentController.create)
 
 router.route('/:ID')
     .get(authController.verifyToken, paymentController.findOne)

@@ -225,7 +225,7 @@ exports.findUser = async (req, res) => {
             {
               model: db.property,
               as: 'properties',
-              attributes: ['title', 'ID', 'daily_price', 'location'],
+              attributes: ['title', 'ID', 'daily_price', 'location', 'is_blocked'],
               include: [
                 {
                   model: db.reservation,
@@ -582,16 +582,9 @@ exports.resetPassword = async (req, res) => {
         msg: "User not found."
       });
 
-    let affectedRows = await User.update({ password: bcrypt.hashSync(req.body.password, 10) }, {
+    await User.update({ password: bcrypt.hashSync(req.body.password, 10) }, {
       where: { username: req.body.username },
     });
-
-    if (affectedRows[0] === 0) {
-      return res.status(200).json({
-        success: true,
-        msg: `No updates were made on user with username ${req.body.username}.`,
-      });
-    }
 
     return res.json({
       success: true,
@@ -627,6 +620,14 @@ exports.addFavorite = async (req, res) => {
       return res.status(404).json({
         success: false,
         msg: "The specified properties ID does not exist."
+      });
+    }
+
+    let favorite = await Favorite.findOne({ where: { username: req.params.idU, property_ID: req.body.property_ID } })
+    if (favorite) {
+      return res.status(404).json({
+        success: false,
+        msg: "Favorite already added."
       });
     }
 
@@ -877,8 +878,8 @@ exports.findOwnerReviews = async (req, res) => {
         data: reviews,
       });
     } else {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         msg: "No review found."
       });
     }
