@@ -7,7 +7,7 @@ const router = express.Router();
 
 const multer = require('multer')  // continuar aqui
 let storage = multer.memoryStorage();
-const multerUploads = multer({ storage }).fields([{name: 'inputPropertyImages', maxCount: 2}]);
+const multerUploads = multer({ storage }).fields([{name: 'inputPropertyImages', maxCount: 20}]);
 
 // Middleware for all routes related to properties
 router.use((req, res, next) => {
@@ -21,7 +21,7 @@ router.route("/")
 
 router.route("/:idP")
   .get(propertyController.findProperty)
-  .patch(authController.verifyToken, propertyController.editProperty)
+  .patch(authController.verifyToken, multerUploads, propertyController.editProperty)
   .delete(authController.verifyToken, propertyController.deleteProperty);
 
 router.route("/:idP/reviews")

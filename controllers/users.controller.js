@@ -318,7 +318,11 @@ exports.findUser = async (req, res) => {
                 {
                   model: db.reservation,
                   as: "reservations"
-                }
+                },
+                {
+                  model: db.photos_property,
+                  as: "photos"
+                },
               ]
             }
           ]
