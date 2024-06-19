@@ -137,10 +137,12 @@ exports.findOne = async (req, res) => {
 // Handles payment status of a specific reservation
 exports.changeStatus = async (req, res) => {
     try {
+        console.log("ENTERED");
         const reservationId = req.params.ID;
         const newStatusName = req.body.status_name;
 
         const reservation = await Reservation.findByPk(reservationId)
+        console.log(reservation);
         if (!reservation) {
             return res.status(404).json({
                 success: false,
@@ -152,7 +154,7 @@ exports.changeStatus = async (req, res) => {
         let property = await Property.findByPk(reservation.property_ID)
         if (req.loggedUserId == reservation.username || req.loggedUserId == property.owner_username || req.loggedUserRole == "admin") {
             const payment = await Payment.findOne({ where: { reservation_ID: reservationId } });
-
+            console.log(payment);
             if (!payment) {
                 return res.status(404).json({
                     success: false,
@@ -162,6 +164,7 @@ exports.changeStatus = async (req, res) => {
             }
 
             const status = await db.status_payment.findOne({ where: { status_name: newStatusName } });
+            console.log(status);
             if (!status) {
                 return res.status(404).json({
                     success: false,

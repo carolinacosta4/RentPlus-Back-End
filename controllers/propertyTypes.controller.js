@@ -13,7 +13,7 @@ exports.findAll = async (req, res) => {
             data: types.rows,
         });
     } catch (err) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             msg: err.message || 'Some error occurred while retrieving the proprty types.'
         });

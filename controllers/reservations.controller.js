@@ -38,9 +38,9 @@ exports.findAll = async (req, res) => {
             attributes: { exclude: ['status_reservation_ID',] },
             order: [['ID', 'DESC']]
         });  // TESTE
-        res.status(200).json(reservs);
+        return res.status(200).json(reservs);
     } catch (error) {
-        res.status(500).json({ error: "Internal server error" });
+        return res.status(500).json({ error: "Internal server error" });
     }
 };
 
