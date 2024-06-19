@@ -43,11 +43,12 @@ exports.changeProfilePicture = async (req, res) => {
         cloudinary_id: user_image ? user_image.public_id : null
       }, { where: { username: req.params.idU } });
 
-      return res.status(201).json({ 
-        success: true, 
-        profile_image: user_image ? user_image.url : null, 
+      return res.status(201).json({
+        success: true,
+        profile_image: user_image ? user_image.url : null,
         cloudinary_id: user_image ? user_image.public_id : null,
-        msg: "Profile picture updated successfully!" });
+        msg: "Profile picture updated successfully!"
+      });
     }
 
     return res.status(403).json({
@@ -154,6 +155,7 @@ exports.register = async (req, res) => {
 
     const createdAt = new Date();
 
+
     let newUser = await User.create({
       username: req.body.username, email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 10),
@@ -162,6 +164,8 @@ exports.register = async (req, res) => {
       is_confirmed: false, user_role: req.body.user_role,
       owner_description: req.body.owner_description,
       created_at: createdAt,
+      profile_image: "https://res.cloudinary.com/ditdnslga/image/upload/v1718780629/userPlaceHolder_l1dvdi.png",
+      cloudinary_id: "defaultProfileImage"
     });
 
     const mailOptions = {
@@ -183,7 +187,7 @@ exports.register = async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error('Failed to send confirmation email:', error);
-        return res.status(500).json({ success: false, msg: 'User created, but failed to send confirmation email' });
+        return res.status(201).json({ success: true, msg: 'User created, but failed to send confirmation email' });
       } else {
         return res.status(201).json({
           success: true,

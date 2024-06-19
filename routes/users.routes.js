@@ -21,7 +21,7 @@ const multerUploads = multer({ storage }).single('inputProfilePicture');
 
 router.route("/")
   .get(authController.verifyToken, userController.findAll)
-  .post(userController.register)
+  .post(multerUploads, userController.register)
   .patch(userController.resetPassword);
 
 router.route("/:idU/change-profile-picture")
