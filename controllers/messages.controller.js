@@ -1,7 +1,6 @@
 const db = require("../models/index.js");
 const Message = db.message;
-const { ValidationError } = require('sequelize');
-const { Op } = require('sequelize');
+const { Op, ValidationError } = require('sequelize');
 const Property = db.property
 
 // Only for programmers to analyze the changes made during testings

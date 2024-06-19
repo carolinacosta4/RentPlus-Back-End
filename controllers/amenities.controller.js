@@ -2,7 +2,6 @@ const db = require("../models/index.js");
 const Amenity = db.amenity;
 
 exports.findAll = async (req, res) => {
-
     try {
         const amenities = await Amenity.findAndCountAll({
             order: [['amenity_name', 'ASC']]

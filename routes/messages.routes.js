@@ -22,5 +22,4 @@ router.route('/:username')
 router.route('/:username/:ID')
     .delete(authController.verifyToken, MessageController.deleteMessage);
 
-
 module.exports = router;

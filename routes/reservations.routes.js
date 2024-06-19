@@ -13,7 +13,6 @@ router.use((req, res, next) => {
     next()
 })
 
-
 router.route('/')
     .get(ReservationController.findAll)
     .post(authController.verifyToken, ReservationController.bodyValidator, ReservationController.create)

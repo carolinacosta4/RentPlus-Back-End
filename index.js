@@ -31,6 +31,6 @@ app.all("*", function (req, res) {
     msg: `The API does not recognize the request on ${req.url}`,
   });
 });
-app.listen(port, host, () =>
+app.listen(port, () =>
   console.log(`App listening at http://${host}:${port}/`)
 );

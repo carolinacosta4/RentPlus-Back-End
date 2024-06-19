@@ -1,5 +1,4 @@
 const db = require("../models/index.js");
-const { ValidationError } = require('sequelize');
 const PaymentType = db.payment_type
 
 exports.findAll = async (req, res) => {

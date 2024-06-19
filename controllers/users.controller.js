@@ -6,10 +6,8 @@ const db = require("../models/index.js");
 const User = db.user;
 const Favorite = db.favorites
 const Property = db.property
-const Review = db.review;
-const Reservation = db.reservation
 
-const { Op, ValidationError, Sequelize } = require("sequelize");
+const { ValidationError, Sequelize } = require("sequelize");
 
 const cloudinary = require("cloudinary").v2;
 // cloudinary configuration
@@ -19,12 +17,7 @@ cloudinary.config({
   api_secret: config.C_API_SECRET
 });
 
-const multer = require('multer')  // continuar aqui
-let storage = multer.memoryStorage();
-const multerUploads = multer({ storage }).single('inputProfilePicture');
-
 exports.changeProfilePicture = async (req, res) => {
-  console.log(req.file);
   try {
     let user = await User.findByPk(req.params.idU);
     if (user === null) {
@@ -36,15 +29,11 @@ exports.changeProfilePicture = async (req, res) => {
     if (req.loggedUserId == req.params.idU) {
       let user_image = null;
       if (req.file) {
-        // Destruir a imagem antiga no Cloudinary se existir
         if (user.cloudinary_id) {
           await cloudinary.uploader.destroy(user.cloudinary_id);
         }
         const b64 = Buffer.from(req.file.buffer).toString("base64");
-        
-        // Converter o base64 para Data URI
         let dataURI = `data:${req.file.mimetype};base64,${b64}`;
-        // Fazer upload para o Cloudinary
         let result = await cloudinary.uploader.upload(dataURI, { resource_type: "auto" });
         user_image = result;
       }
@@ -66,50 +55,9 @@ exports.changeProfilePicture = async (req, res) => {
       msg: "You are not authorized to edit other users.",
     });
   } catch (error) {
-    console.error('Error:', error);
     return res.status(500).json({ success: false, msg: 'An error occurred while updating profile picture.' });
   }
 };
-
-// exports.changeProfilePicture = async (req, res) => {
-
-//   try {
-//     let user = await User.findByPk(req.params.idU);
-//     if (user === null) {
-//       return res.status(404).json({
-//         success: false,
-//         msg: `Cannot find any user with username ${req.params.idU}`,
-//       });
-//     }
-//     if (req.loggedUserId == req.params.idU) {
-//       let user_image = null
-//       if (req.body.file) {
-//         // await cloudinary.uploader.destroy(user.cloudinary_id); //VOLTAR AQUI DPS
-
-//         const b64 = Buffer.from(req.file.buffer).toString("base64");
-//         let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-//         let result = await cloudinary.uploader.upload(dataURI, { resource_type: "auto" });
-//         user_image = result;
-//       }
-
-//       await User.update({
-//         profile_image: user_image ? user_image.url : null, // save URL to access the image
-//         cloudinary_id: user_image ? user_image.public_id : null // save image ID to delete it
-//       }, { where: { username: req.params.idU } })
-
-//       return res.status(201).json({ success: true, msg: "Profile picture updated successfully!" });
-//     }
-
-//     return res.status(403).json({
-//       success: false,
-//       msg: "You are not authorized to edit other users.",
-//     });
-//   } catch (error) {
-//     if(error instanceof multer.MulterError){
-//       console.log(error.name);
-//     }
-//   }
-// }
 
 // Obtains general information about all users. Route only available for admins. Has an optional limit counter.
 exports.findAll = async (req, res) => {
