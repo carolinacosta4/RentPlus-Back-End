@@ -221,6 +221,7 @@ exports.createProperty = async (req, res) => {
         success: true,
         msg: "Property created successfully.",
         property_ID: newProperty.ID,
+        data: newProperty,
         links: [
           { rel: "self", href: `/properties/${newProperty.ID}`, method: "GET" },
           { rel: "delete", href: `/properties/${newProperty.ID}`, method: "DELETE" },
@@ -310,8 +311,10 @@ exports.editProperty = async (req, res) => {
         });
       }
 
-      return res.json({
+      return res.status(200).json({
         success: true,
+        data: property,
+      
         msg: `Property with ID ${req.params.idP} was updated successfully.`,
       });
 

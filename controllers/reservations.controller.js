@@ -10,10 +10,10 @@ const config = require("../config/db.config.js");
 const transporter = nodemailer.createTransport({
     service: 'hotmail',
     auth: {
-      user: config.MAIL_USER,
-      pass: config.MAIL_PASSWORD
+        user: config.MAIL_USER,
+        pass: config.MAIL_PASSWORD
     }
-  });
+});
 
 // Only for programmers to analyze the changes made during testings
 exports.findAll = async (req, res) => {
@@ -217,7 +217,7 @@ exports.bodyValidator = async (req, res, next) => {
                             }
                         ]
                     }
-                ], 
+                ],
                 status_reservation_ID: {
                     [Op.in]: [1, 3]
                 }
@@ -247,34 +247,34 @@ exports.bodyValidator = async (req, res, next) => {
 // Handles user reservation by sending a request of reservation to the owner (authentication token must be provided in header).
 exports.create = async (req, res) => {
     // if (req.loggedUserId) {
-        const t = await db.sequelize.transaction();
+    const t = await db.sequelize.transaction();
 
-        try {
-            const newReservation = await Reservation.create({
-                property_ID: req.body.property_ID,
-                username: req.loggedUserId,
-                status_reservation_ID: 1,
-                dateIn: req.body.dateIn,
-                dateOut: req.body.dateOut,
-                total_price: req.body.total_price,
-                payment_type: req.body.payment_type,
-            }, { transaction: t });
+    try {
+        const newReservation = await Reservation.create({
+            property_ID: req.body.property_ID,
+            username: req.loggedUserId,
+            status_reservation_ID: 1,
+            dateIn: req.body.dateIn,
+            dateOut: req.body.dateOut,
+            total_price: req.body.total_price,
+            payment_type: req.body.payment_type,
+        }, { transaction: t });
 
-            const newPayment = await Payment.create({
-                reservation_ID: newReservation.ID,
-                status_payment: 1, // 1 é o ID para "pending"
-                amount: req.body.total_price,
-                payment_type: req.body.payment_type
-            }, { transaction: t });
+        const newPayment = await Payment.create({
+            reservation_ID: newReservation.ID,
+            status_payment: 1, // 1 é o ID para "pending"
+            amount: req.body.total_price,
+            payment_type: req.body.payment_type
+        }, { transaction: t });
 
-            let property = await Property.findByPk(req.body.property_ID)
-            let user = await User.findOne({where: {username: req.loggedUserId}})
-        
-            const mailOptions = {
-                from: config.MAIL_USER,
-                to: user.email,
-                subject: `Confirmation of Your Reservation at ${property.title}`,
-                html: `<div style="font-family: 'Inter', sans-serif; font-weight: 300; text-align: center; padding: 20px; font-size: 14px;">
+        let property = await Property.findByPk(req.body.property_ID)
+        let user = await User.findOne({ where: { username: req.loggedUserId } })
+
+        const mailOptions = {
+            from: config.MAIL_USER,
+            to: user.email,
+            subject: `Confirmation of Your Reservation at ${property.title}`,
+            html: `<div style="font-family: 'Inter', sans-serif; font-weight: 300; text-align: center; padding: 20px; font-size: 14px;">
                     <p>Dear ${user.first_name} ${user.last_name},</p>
                     <h1>We are pleased to confirm your reservation.</h1>
                     <p><strong>Reservation Details:</strong></p>
@@ -289,60 +289,60 @@ exports.create = async (req, res) => {
                     <p>Warm regards,<br>Rent+ Team</p>
                     <p>🏠✨</p>
                 </div>`
-            }
+        }
 
-            await t.commit(); // Commit da transação se tudo estiver correto
+        await t.commit(); // Commit da transação se tudo estiver correto
 
-            let reservation = await Reservation.findByPk(newReservation.ID, {
-                include: [
-                    {
-                        model: db.status_reservation,
+        let reservation = await Reservation.findByPk(newReservation.ID, {
+            include: [
+                {
+                    model: db.status_reservation,
+                    as: 'status',
+                    attributes: ['status_name']
+                },
+                {
+                    model: db.payment,
+                    as: 'payments',
+                    include: [{
+                        model: db.status_payment,
                         as: 'status',
                         attributes: ['status_name']
-                    },
-                    {
-                        model: db.payment,
-                        as: 'payments',
-                        include: [{
-                            model: db.status_payment,
-                            as: 'status',
-                            attributes: ['status_name']
-                        }],
-                    }
-                ]
-            })
-
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                  console.error('Failed to send confirmation email:', error);
-                  return res.status(201).json({ success: true, msg: 'Reservation created, but failed to send confirmation email' });
-                } else {
-                    return res.status(201).json({
-                        success: true,
-                        msg: "Reservation created successfully.",
-                        data: {
-                            reservation: reservation
-                        }
-                    });
+                    }],
                 }
-            });
-        } catch (err) {
-            await t.rollback(); // Rollback da transação em caso de erro
+            ]
+        })
 
-            if (err instanceof ValidationError) {
-                return res.status(400).json({
-                    success: false,
-                    error: "Bad Request",
-                    msg: err.message
-                });
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Failed to send confirmation email:', error);
+                return res.status(201).json({ success: true, msg: 'Reservation created, but failed to send confirmation email', data: reservation });
             } else {
-                return res.status(500).json({
-                    success: false,
-                    error: "Server error",
-                    msg: err.message || "An unexpected error occurred. Please try again later"
+                return res.status(201).json({
+                    success: true,
+                    msg: "Reservation created successfully.",
+                    data: {
+                        reservation: reservation
+                    }
                 });
             }
+        });
+    } catch (err) {
+        await t.rollback(); // Rollback da transação em caso de erro
+
+        if (err instanceof ValidationError) {
+            return res.status(400).json({
+                success: false,
+                error: "Bad Request",
+                msg: err.message
+            });
+        } else {
+            return res.status(500).json({
+                success: false,
+                error: "Server error",
+                msg: err.message || "An unexpected error occurred. Please try again later"
+            });
         }
+    }
     // }
     // else {
     //     return res.status(403).json({
@@ -449,6 +449,14 @@ exports.deleteReservation = async (req, res) => {
             const currentDate = new Date();
             const diffTime = Math.abs(dateIn - currentDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (req.loggedUserRole == 'admin') {
+                await reservation.destroy();
+                return res.status(200).json({
+                    success: true,
+                    msg: 'Reservation deleted successfully.'
+                });
+            }
 
             if (diffDays <= 3) {
                 return res.status(400).json({
