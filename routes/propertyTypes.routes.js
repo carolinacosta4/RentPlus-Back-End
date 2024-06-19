@@ -14,5 +14,4 @@ router.use((req, res, next) => {
 router.route('/')
     .get(PropertyTypesController.findAll)
 
-
 module.exports = router;

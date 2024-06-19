@@ -1,11 +1,9 @@
-// propertyController.js
 const db = require("../models/index.js");
 const Property = db.property;
 const Review = db.review;
 const Reservation = db.reservation
 const Photo = db.photos_property
 const config = require("../config/db.config.js");
-
 const { Op, ValidationError, Sequelize } = require("sequelize");
 
 const cloudinary = require("cloudinary").v2;
@@ -428,6 +426,13 @@ exports.findReviews = async (req, res) => {
     const reviews = await db.review.findAll({
       attributes: ['username', 'rating', 'comment', 'reservation_ID'],
       where: { reservation_ID: reservationsFound },
+      include: [
+        {
+          model: db.user,
+          as: "userReview",
+          attributes: ['profile_image']
+        }
+      ],
       limit: limitValue, offset: offset,
       raw: true
     });

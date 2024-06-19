@@ -2,10 +2,8 @@ const express = require("express");
 const userController = require("../controllers/users.controller");
 const authController = require("../controllers/auth.controller");
 
-// express router
 let router = express.Router();
 
-// middleware for all routes related with users
 router.use((req, res, next) => {
   const start = Date.now();
   res.on("finish", () => {
@@ -17,10 +15,9 @@ router.use((req, res, next) => {
   next();
 });
 
-const multer = require('multer')  // continuar aqui
+const multer = require('multer')
 let storage = multer.memoryStorage();
 const multerUploads = multer({ storage }).single('inputProfilePicture');
-
 
 router.route("/")
   .get(authController.verifyToken, userController.findAll)
@@ -28,7 +25,6 @@ router.route("/")
   .patch(userController.resetPassword);
 
 router.route("/:idU/change-profile-picture")
-  // .patch(authController.verifyToken, userController.changeProfilePicture)
   .patch(authController.verifyToken, multerUploads, userController.changeProfilePicture)
 
 router.route('/:idU/role')
@@ -59,8 +55,6 @@ router.route("/:idU/reviews")
 
 router.route("/:idU/confirmation")
   .patch(userController.confirmEmail)
-
-
 
 router.all("*", function (req, res) {
   res
