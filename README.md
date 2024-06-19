@@ -64,9 +64,9 @@ Communication between members of the team:
 
 ## Project Setup
 
-sh
+```sh
 npm install
-
+```
 
 
 <hr>
