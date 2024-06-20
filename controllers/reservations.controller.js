@@ -46,9 +46,9 @@ exports.findAll = async (req, res) => {
 
 // Obtains information about a specified reservation (authentication token must be provided in header).
 exports.findOne = async (req, res) => {
+    try{
     const username = req.params.username
     if (req.loggedUserId == username) {
-        try {
             if (!parseInt(req.params.ID) || !req.params.ID) {
                 return res.status(400).json({
                     success: false,
@@ -98,17 +98,20 @@ exports.findOne = async (req, res) => {
                     data: reservation,
                 })
             }
-        } catch (err) {
-            res.status(500).json({
-                success: false, msg: err.message || "An unexpected error occurred. Please try again later"
-            })
-        };
+        }
+        else {
+            return res.status(403).json({
+                success: false,
+                error: "Forbidden",
+                msg: "You don’t have permission to access this route",
+            });
+        }
     }
-    else {
-        return res.status(403).json({
+    catch (err) {
+        return res.status(500).json({
             success: false,
-            error: "Forbidden",
-            msg: "You don’t have permission to access this route",
+            error: "Server error",
+            msg: "An unexpected error occurred. Please try again later"
         });
     }
 };
