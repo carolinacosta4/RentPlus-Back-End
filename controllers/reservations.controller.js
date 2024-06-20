@@ -249,7 +249,7 @@ exports.bodyValidator = async (req, res, next) => {
 
 // Handles user reservation by sending a request of reservation to the owner (authentication token must be provided in header).
 exports.create = async (req, res) => {
-    // if (req.loggedUserId) {
+    if (req.loggedUserId) {
     const t = await db.sequelize.transaction();
 
     try {
@@ -346,14 +346,14 @@ exports.create = async (req, res) => {
             });
         }
     }
-    // }
-    // else {
-    //     return res.status(403).json({
-    //         success: false,
-    //         error: "Forbidden",
-    //         msg: "You must be logged in to rent a property.",
-    //     });
-    // }
+    }
+    else {
+        return res.status(403).json({
+            success: false,
+            error: "Forbidden",
+            msg: "You must be logged in to rent a property.",
+        });
+    }
 };
 
 // Handles owner of property confirmation or cancelation of reservation order (authentication token must be provided in header). 
