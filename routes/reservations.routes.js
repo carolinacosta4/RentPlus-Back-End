@@ -17,6 +17,9 @@ router.route('/')
     .get(ReservationController.findAll)
     .post(authController.verifyToken, ReservationController.bodyValidator, ReservationController.create)
 
+router.route('/:ID/payments')
+    .get(PaymentController.findOneByReservationID)
+
 router.route('/:username/:ID')
     .get(authController.verifyToken, ReservationController.findOne)
 
