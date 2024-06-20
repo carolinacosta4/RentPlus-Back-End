@@ -587,7 +587,7 @@ exports.recoverEmail = async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         return res.status(500).json({
-          success: false,
+          success: true,
           msg: 'Failed to send recovery email.'
         });
       }
