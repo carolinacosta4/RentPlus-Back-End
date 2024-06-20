@@ -20,7 +20,7 @@ exports.findAll = async (req, res) => {
                     attributes: ['type']
                 }], order: [["ID", 'DESC']]
         });
-        return res.status(200).json(payments);
+        return res.status(200).json({ data: payments });
     } catch (error) {
         return res.status(500).json({ error: "Internal server error" });
     }
@@ -134,6 +134,48 @@ exports.findOne = async (req, res) => {
     };
 };
 
+
+exports.findOneByReservationID = async (req, res) => {
+    try {
+        if (!parseInt(req.params.ID)) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid ID value",
+                error: "ID must be an integer"
+            })
+        }
+
+        let reservation = await Reservation.findOne({ where: { ID: req.params.ID } })
+        if (!reservation) {
+            return res.status(404).json({
+                success: false,
+                error: "Reservation not found"
+            })
+        }
+
+        let payment = await Payment.findOne({ where: { reservation_ID: req.params.ID } })
+
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                error: "Payment not found",
+                msg: "The specified payment ID does not exist"
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: payment,
+            paymentID: payment.ID
+        })
+
+    } catch (err) {
+        return res.status(500).json({
+            success: false, msg: err.message || "An unexpected error occurred. Please try again later"
+        })
+    };
+};
+
 // Handles payment status of a specific reservation
 exports.changeStatus = async (req, res) => {
     try {
@@ -190,6 +232,37 @@ exports.changeStatus = async (req, res) => {
         }
 
     } catch (err) {
+        if (err instanceof ValidationError) {
+            return res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
+        } else {
+            return res.status(500).json({
+                success: false,
+                msg: err.message || "An unexpected error occurred. Please try again later"
+            });
+        }
+    }
+};
+
+
+exports.deletePayment = async (req, res) => {
+    try {
+        const paymentId = req.params.ID;
+        const payment = await Payment.findByPk(paymentId);
+
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                error: "Payment Not Found",
+                msg: "The specified reservation ID does not exist."
+            });
+        }
+
+        await payment.destroy();
+        return res.status(200).json({
+            success: true,
+            msg: 'Payment deleted successfully.'
+        });
+    } catch (error) {
         if (err instanceof ValidationError) {
             return res.status(400).json({ success: false, msg: err.errors.map(e => e.message) });
         } else {

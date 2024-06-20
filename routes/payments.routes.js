@@ -18,6 +18,10 @@ router.route('/')
 
 router.route('/:ID')
     .get(authController.verifyToken, paymentController.findOne)
+    .delete( paymentController.deletePayment)
+
+router.route('/reservations/:ID')
+    .get(paymentController.findOneByReservationID)
 
 router.all('*', function (req, res) {
     res.status(400).json({ success: false, message: `The API does not recognize the request on ${req.method} ${req.originalUrl}` });
