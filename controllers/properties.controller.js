@@ -522,7 +522,7 @@ exports.createReview = async (req, res) => {
       });
     }
 
-    await Review.create({
+    let newReview = await Review.create({
       username: req.loggedUserId, rating: req.body.rating,
       comment: req.body.comment, reservation_ID: req.body.reservation_ID
     });
@@ -530,6 +530,7 @@ exports.createReview = async (req, res) => {
     return res.json({
       success: true,
       msg: "Review created successfully.",
+      data: newReview,
       links: [
         {
           rel: "get",
