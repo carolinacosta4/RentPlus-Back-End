@@ -422,7 +422,7 @@ exports.editProfile = async (req, res) => {
         const updatedUser = await User.findOne({ where: { username: req.body.username } })
         const updatedToken = jwt.sign({ id: updatedUser.username, role: updatedUser.user_role },
           config.SECRET, {
-          expiresIn: '1h'
+          expiresIn: '3h'
         })
 
         return res.json({
@@ -536,7 +536,7 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign({ id: user.username, role: user.user_role },
       config.SECRET, {
-      expiresIn: '1h'
+      expiresIn: '3h'
     });
 
     return res.status(200).json({ success: true, accessToken: token });
@@ -858,7 +858,7 @@ exports.editRole = async (req, res) => {
     const user = await User.findOne({ where: { username: req.loggedUserId } })
     const newToken = jwt.sign({ id: user.username, role: user.user_role },
       config.SECRET, {
-      expiresIn: '1h'
+      expiresIn: '3h'
     });
 
     return res.json({
