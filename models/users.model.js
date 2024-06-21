@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       user_role: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: "user",
+        defaultValue: "guest",
       },
       profile_image: {
         type: DataTypes.STRING,
